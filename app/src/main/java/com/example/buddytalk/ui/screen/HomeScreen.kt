@@ -1,6 +1,8 @@
 package com.example.buddytalk.ui.screen
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,283 +15,237 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.buddytalk.data.viewModel.UserViewModel
-import com.example.buddytalk.ui.theme.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import com.example.buddytalk.data.viewModel.HomeViewModel
+import com.example.buddytalk.ui.navigation.Routes
+import com.example.buddytalk.ui.theme.HeaderBlue
 
 @Composable
-fun HomeScreen(viewModel: UserViewModel, onNavigateToSettings: () -> Unit) {
-    val userState by viewModel.user.collectAsState()
-    
-    val user = userState ?: return
+fun HomeScreen(
+    navController: NavController,
+    viewModel: HomeViewModel = viewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
 
-    Scaffold(
-        bottomBar = { BottomNavigationBar() },
-        containerColor = AppBackground
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+            .padding(horizontal = 24.dp)
+    ) {
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Top Bar
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            HeaderSection(
-                userName = user.userName,
-                onSettingsClick = onNavigateToSettings
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            MainProfileCard(level = user.level, rank = user.rank)
-            Spacer(modifier = Modifier.height(16.dp))
-            BottomCardsRow(streak = user.streak)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(HeaderBlue),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("B", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "BuddyTalk",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+            }
+            
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color(0xFFFFF5F5),
+                    border = BorderStroke(1.dp, Color(0xFFFFE0E0))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("🔥", fontSize = 16.sp)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "${uiState.streak}",
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFFF4B4B)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Icon(
+                    Icons.Default.NotificationsNone,
+                    contentDescription = null,
+                    tint = Color.Gray,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
         }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // Greeting
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = uiState.greeting,
+                color = Color.Gray,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 2.sp
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Hôm nay bạn muốn làm\ngì?",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Black,
+                color = Color(0xFF333333),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                lineHeight = 36.sp
+            )
+        }
+
+        Spacer(modifier = Modifier.height(40.dp))
+
+        // Action Cards
+        ActionCard(
+            title = "Học",
+            subtitle = "TIẾP TỤC ${uiState.currentLesson}",
+            icon = "📚",
+            color = Color(0xFF2196F3),
+            onClick = { navController.navigate(Routes.Topics.createRoute("learn")) }
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        ActionCard(
+            title = "Luyện tập",
+            subtitle = "KIỂM TRA NĂNG LỰC",
+            icon = "🎯",
+            color = Color(0xFFA855F7),
+            onClick = { navController.navigate(Routes.Topics.createRoute("practice")) }
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        ActionCard(
+            title = "Thống kê",
+            subtitle = "TIẾN ĐỘ CỦA BẠN",
+            icon = "📊",
+            color = Color(0xFF10B981),
+            onClick = { /* Not routed yet */ }
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+        
+        // Daily Mission
+        DailyMissionItem()
     }
 }
 
 @Composable
-fun HeaderSection(userName: String, onSettingsClick: () -> Unit) {
-    Box(
+fun ActionCard(
+    title: String,
+    subtitle: String,
+    icon: String,
+    color: Color,
+    onClick: () -> Unit
+) {
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(140.dp)
-            .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(HeaderBlue, HeaderBlueLight)
-                )
-            )
-            .padding(24.dp)
+            .height(100.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(24.dp),
+        color = Color.White,
+        border = BorderStroke(2.dp, color.copy(alpha = 0.5f)),
+        shadowElevation = 0.dp
     ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .padding(horizontal = 24.dp)
+                .fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
                     .size(60.dp)
-                    .clip(CircleShape)
-                    .background(Color.White),
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(color.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Face, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(40.dp))
+                Text(icon, fontSize = 32.sp)
             }
             
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(20.dp))
             
-            Column(modifier = Modifier.weight(1.0f)) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "BẠN CỦA BUDDYTALK",
-                    color = Color.White.copy(alpha = 0.8f),
+                    text = title,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFF333333)
+                )
+                Text(
+                    text = subtitle,
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = userName,
-                    color = Color.White,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = color,
+                    letterSpacing = 1.sp
                 )
             }
             
-            IconButton(onClick = onSettingsClick) {
-                Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.White.copy(alpha = 0.5f))
-            }
+            Icon(
+                Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(32.dp)
+            )
         }
     }
 }
 
 @Composable
-fun MainProfileCard(level: Int, rank: String) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .height(320.dp),
-        shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(containerColor = CardBackground),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Box(contentAlignment = Alignment.BottomEnd) {
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFE3F2FD)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(80.dp), tint = ButtonYellow)
-                }
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = ButtonYellow,
-                    modifier = Modifier.offset(y = 4.dp)
-                ) {
-                    Text(
-                        text = "LV $level",
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = Color(0xFFFFF8E1),
-                border = null
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.Star, contentDescription = null, tint = ButtonYellow, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = rank, color = ButtonYellow, fontWeight = FontWeight.Bold)
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            Button(
-                onClick = { },
-                colors = ButtonDefaults.buttonColors(containerColor = ButtonYellow),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 32.dp)
-                    .height(56.dp)
-            ) {
-                Icon(Icons.Default.Star, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = "XEM BÀI HỌC", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            }
-        }
-    }
-}
-
-@Composable
-fun BottomCardsRow(streak: Int) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Card(
-            modifier = Modifier
-                .weight(1f)
-                .height(180.dp),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = CardBackground)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "TÚI ĐỒ", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    Text(text = "TẤT CẢ", color = HeaderBlue, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ItemIcon(Icons.Default.Star, "TOP 1", ButtonYellow)
-                    ItemIcon(Icons.Default.ThumbUp, "7 NGÀY", Color.Red)
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ItemIcon(Icons.Default.Menu, "", Color.LightGray)
-                    ItemIcon(Icons.Default.Info, "", Color.LightGray)
-                }
-            }
-        }
-        
-        Card(
-            modifier = Modifier
-                .weight(1f)
-                .height(180.dp),
-            shape = RoundedCornerShape(24.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Brush.verticalGradient(colors = listOf(StreakOrangeLight, StreakOrange)))
-                    .padding(16.dp)
-            ) {
-                Column {
-                    Text(text = "CHUỖI", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Text(text = "$streak", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 48.sp)
-                    Text(text = "Cố gắng lên!", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
-                }
-                Icon(
-                    Icons.Default.Favorite,
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.3f),
-                    modifier = Modifier.size(60.dp).align(Alignment.CenterEnd)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun ItemIcon(icon: ImageVector, label: String, tint: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            modifier = Modifier
-                .size(45.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFFFFF3E0)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(24.dp))
-        }
-        if (label.isNotEmpty()) {
-            Text(text = label, fontSize = 8.sp, fontWeight = FontWeight.Bold, color = TextGray)
-        }
-    }
-}
-
-@Composable
-fun BottomNavigationBar() {
+fun DailyMissionItem() {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(80.dp)
-            .padding(horizontal = 24.dp, vertical = 12.dp),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        color = Color.White,
-        shadowElevation = 8.dp
+        color = Color(0xFFF9FAFB)
     ) {
         Row(
-            modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.SpaceAround,
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.Home, contentDescription = null, tint = Color.LightGray)
-            
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(HeaderBlue),
+                    .clip(CircleShape)
+                    .background(Color(0xFFFFF7ED)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Person, contentDescription = null, tint = Color.White)
+                Text("🎁", fontSize = 24.sp)
             }
-            
-            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = HeaderBlue)
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = "Nhiệm vụ hằng ngày",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF333333)
+            )
         }
     }
 }

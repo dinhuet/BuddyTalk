@@ -9,5 +9,6 @@ data class UserEntity(
     val userName: String,
     val level: Int,
     val rank: String,
-    val streak: Int
+    val streak: Int,
+    val avatarUrl: String? = null
 )

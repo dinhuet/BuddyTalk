@@ -14,4 +14,8 @@ class UserRepository(private val userDao: UserDao) {
     suspend fun updateUserName(newName: String, currentUser: UserEntity) {
         userDao.insertUser(currentUser.copy(userName = newName))
     }
+
+    suspend fun updateAvatar(newUrl: String, currentUser: UserEntity) {
+        userDao.insertUser(currentUser.copy(avatarUrl = newUrl))
+    }
 }

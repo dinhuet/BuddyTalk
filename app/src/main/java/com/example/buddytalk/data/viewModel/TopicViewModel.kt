@@ -74,27 +74,51 @@ class TopicViewModel(application: Application) : AndroidViewModel(application) {
             Topic(name = "Thức ăn", isLocked = true),
             Topic(name = "Quần áo", isLocked = true)
         )
+
         topics.forEach { topic ->
             val topicId = topicRepository.insertTopic(topic)
-            // Seed some dummy lessons to make count logic work if needed
-            val count = when(topic.name) {
-                "Động vật" -> 10
-                "Nghề nghiệp" -> 15
-                "Gia đình" -> 12
-                "Thức ăn" -> 18
-                "Quần áo" -> 14
-                else -> 0
-            }
-            for (i in 1..count) {
-                lessonRepository.insertLesson(
-                    Lesson(
-                        name = "${topic.name} $i",
-                        ref = topicId,
-                        letter = "",
-                        word = "",
-                        isWordLesson = false
-                    )
+
+            val lessons = when (topic.name) {
+
+                "Động vật" -> listOf(
+                    Lesson(name = "bo", letter = "B", word = "Bò", ref = topicId, isWordLesson = true),
+                    Lesson(name = "meo", letter = "M", word = "Mèo", ref = topicId, isWordLesson = true),
+                    Lesson(name = "cho", letter = "C", word = "Chó", ref = topicId, isWordLesson = true),
+                    Lesson(name = "ga", letter = "G", word = "Gà", ref = topicId, isWordLesson = true),
+                    Lesson(name = "vit", letter = "V", word = "Vịt", ref = topicId, isWordLesson = true)
                 )
+
+                "Nghề nghiệp" -> listOf(
+                    Lesson(name = "bacsi", letter = "B", word = "Bác sĩ", ref = topicId, isWordLesson = true),
+                    Lesson(name = "giaovien", letter = "G", word = "Giáo viên", ref = topicId, isWordLesson = true),
+                    Lesson(name = "congan", letter = "C", word = "Công an", ref = topicId, isWordLesson = true),
+                    Lesson(name = "taixe", letter = "T", word = "Tài xế", ref = topicId, isWordLesson = true)
+                )
+
+                "Gia đình" -> listOf(
+                    Lesson(name = "bo", letter = "B", word = "Bố", ref = topicId, isWordLesson = true),
+                    Lesson(name = "me", letter = "M", word = "Mẹ", ref = topicId, isWordLesson = true),
+                    Lesson(name = "anh", letter = "A", word = "Anh", ref = topicId, isWordLesson = true),
+                    Lesson(name = "chi", letter = "C", word = "Chị", ref = topicId, isWordLesson = true)
+                )
+
+                "Thức ăn" -> listOf(
+                    Lesson(name = "com", letter = "C", word = "Cơm", ref = topicId, isWordLesson = true),
+                    Lesson(name = "pho", letter = "P", word = "Phở", ref = topicId, isWordLesson = true),
+                    Lesson(name = "banhmi", letter = "B", word = "Bánh mì", ref = topicId, isWordLesson = true),
+                    Lesson(name = "sua", letter = "S", word = "Sữa", ref = topicId, isWordLesson = true)
+                )
+
+                "Quần áo" -> listOf(
+                    Lesson(name = "ao", letter = "A", word = "Áo", ref = topicId, isWordLesson = true),
+                    Lesson(name = "quan", letter = "Q", word = "Quần", ref = topicId, isWordLesson = true),
+                    Lesson(name = "mu", letter = "M", word = "Mũ", ref = topicId, isWordLesson = true),
+                    Lesson(name = "giay", letter = "G", word = "Giày", ref = topicId, isWordLesson = true)
+                )
+                else -> emptyList()
+            }
+            lessons.forEach { lesson ->
+                lessonRepository.insertLesson(lesson)
             }
         }
     }

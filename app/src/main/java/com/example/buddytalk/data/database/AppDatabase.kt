@@ -4,12 +4,18 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.example.buddytalk.data.dao.LessonDao
+import com.example.buddytalk.data.dao.TopicDao
 import com.example.buddytalk.data.dao.UserDao
+import com.example.buddytalk.data.entity.Lesson
+import com.example.buddytalk.data.entity.Topic
 import com.example.buddytalk.data.entity.UserEntity
 
-@Database(entities = [UserEntity::class], version = 1)
+@Database(entities = [UserEntity::class, Topic::class, Lesson::class], version = 1, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
+    abstract fun topicDao(): TopicDao
+    abstract fun lessonDao(): LessonDao
 
     companion object {
         @Volatile
@@ -21,7 +27,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "buddy_talk_db"
-                ).build()
+                )
+                .fallbackToDestructiveMigration()
+                .build()
                 INSTANCE = instance
                 instance
             }

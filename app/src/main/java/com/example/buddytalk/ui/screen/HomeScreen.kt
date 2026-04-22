@@ -26,7 +26,11 @@ import com.example.buddytalk.data.viewModel.UserViewModel
 import com.example.buddytalk.ui.theme.*
 
 @Composable
-fun HomeScreen(viewModel: UserViewModel, onNavigateToSettings: () -> Unit) {
+fun HomeScreen(
+    viewModel: UserViewModel,
+    onNavigateToSettings: () -> Unit,
+    onNavigateToTopics: () -> Unit
+) {
     val userState by viewModel.user.collectAsState()
     
     val user = userState ?: return

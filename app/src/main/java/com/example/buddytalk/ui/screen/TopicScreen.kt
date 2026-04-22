@@ -8,7 +8,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,7 +31,7 @@ import com.example.buddytalk.data.viewModel.TopicUiState
 fun TopicScreen(
     viewModel: TopicViewModel = viewModel(),
     mode: String = "learn",
-    onTopicClick: (Long) -> Unit = {}
+    onTopicClick: (Long, String) -> Unit = { _, _ -> }
 ) {
     val topics by viewModel.topicsWithCount.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
@@ -143,7 +142,7 @@ fun TopicScreen(
                 items(topics) { topicState ->
                     TopicItem(
                         topicState = topicState,
-                        onClick = { onTopicClick(topicState.topic.id) }
+                        onClick = { onTopicClick(topicState.topic.id, learningMode.name) }
                     )
                 }
             }

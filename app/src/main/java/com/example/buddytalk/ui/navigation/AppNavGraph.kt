@@ -15,6 +15,7 @@ import com.example.buddytalk.ui.screen.HomeScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.buddytalk.ui.screen.ProfileScreen
 import com.example.buddytalk.ui.screen.PracticePronunciationScreen
+import com.example.buddytalk.ui.screen.LessonScreen
 
 @Composable
 fun AppNavGraph(
@@ -53,18 +54,32 @@ fun AppNavGraph(
             TopicScreen(
                 viewModel = topicViewModel,
                 mode = mode,
-                onTopicClick = { topicId ->
+                onTopicClick = { topicId, learningMode ->
                     if (mode == "practice") {
-                        // Lấy type từ trạng thái chọn trong TopicScreen hoặc truyền mặc định
-                        // Ở đây giả định nếu đang ở mode practice thì navigate tới màn luyện phát âm
-                        navController.navigate(Routes.PracticePronunciation.createRoute(topicId, "vocabulary"))
+                        navController.navigate(Routes.PracticePronunciation.createRoute(topicId, learningMode.lowercase()))
                     } else {
-                        // Navigate to normal lessons
+                        navController.navigate(Routes.Lesson.createRoute(topicId, learningMode))
                     }
                 }
             )
         }
         
+        composable(
+            Routes.Lesson.route,
+            arguments = listOf(
+                navArgument("topicId") { type = NavType.LongType },
+                navArgument("mode") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val topicId = backStackEntry.arguments?.getLong("topicId") ?: 0L
+            val mode = backStackEntry.arguments?.getString("mode") ?: "IMAGE"
+            LessonScreen(
+                navController = navController,
+                topicId = topicId,
+                mode = mode
+            )
+        }
+
         composable(
             Routes.PracticePronunciation.route,
             arguments = listOf(

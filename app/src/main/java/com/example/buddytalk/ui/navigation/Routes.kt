@@ -11,4 +11,7 @@ sealed class Routes(val route: String) {
     object PracticePronunciation : Routes("practice_pronunciation/{topicId}/{type}") {
         fun createRoute(topicId: Long, type: String) = "practice_pronunciation/$topicId/$type"
     }
+    object Lesson : Routes("lesson/{topicId}/{mode}") {
+        fun createRoute(topicId: Long, mode: String) = "lesson/$topicId/$mode"
+    }
 }

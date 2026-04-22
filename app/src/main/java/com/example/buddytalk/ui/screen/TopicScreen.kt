@@ -31,11 +31,19 @@ import com.example.buddytalk.data.viewModel.TopicUiState
 @Composable
 fun TopicScreen(
     viewModel: TopicViewModel = viewModel(),
+    mode: String = "learn",
     onTopicClick: (Long) -> Unit = {}
 ) {
     val topics by viewModel.topicsWithCount.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val learningMode by viewModel.learningMode.collectAsState()
+
+    // Cập nhật mặc định cho mode practice nếu chưa được set
+    LaunchedEffect(mode) {
+        if (mode == "practice" && learningMode != LearningMode.SENTENCE && learningMode != LearningMode.VOCABULARY) {
+            viewModel.onLearningModeChange(LearningMode.SENTENCE)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -51,33 +59,64 @@ fun TopicScreen(
         ) {
             Spacer(modifier = Modifier.height(24.dp))
             
-            Text(
-                text = "Chế độ học",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF333333)
-            )
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                LearningModeItem(
-                    title = "Hình ảnh",
-                    icon = Icons.Default.Image,
-                    isSelected = learningMode == LearningMode.IMAGE,
-                    modifier = Modifier.weight(1f),
-                    onClick = { viewModel.onLearningModeChange(LearningMode.IMAGE) }
+            if (mode == "practice") {
+                Text(
+                    text = "Luyện tập theo",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF333333)
                 )
-                LearningModeItem(
-                    title = "Từ / Câu",
-                    icon = Icons.Default.TextFields,
-                    isSelected = learningMode == LearningMode.TEXT,
-                    modifier = Modifier.weight(1f),
-                    onClick = { viewModel.onLearningModeChange(LearningMode.TEXT) }
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    LearningModeItem(
+                        title = "Cả câu",
+                        icon = Icons.Default.FormatQuote,
+                        isSelected = learningMode == LearningMode.SENTENCE,
+                        modifier = Modifier.weight(1f),
+                        onClick = { viewModel.onLearningModeChange(LearningMode.SENTENCE) }
+                    )
+                    LearningModeItem(
+                        title = "Từ vựng",
+                        icon = Icons.Default.Abc,
+                        isSelected = learningMode == LearningMode.VOCABULARY,
+                        modifier = Modifier.weight(1f),
+                        onClick = { viewModel.onLearningModeChange(LearningMode.VOCABULARY) }
+                    )
+                }
+            } else {
+                Text(
+                    text = "Chế độ học",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF333333)
                 )
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    LearningModeItem(
+                        title = "Hình ảnh",
+                        icon = Icons.Default.Image,
+                        isSelected = learningMode == LearningMode.IMAGE,
+                        modifier = Modifier.weight(1f),
+                        onClick = { viewModel.onLearningModeChange(LearningMode.IMAGE) }
+                    )
+                    LearningModeItem(
+                        title = "Từ / Câu",
+                        icon = Icons.Default.TextFields,
+                        isSelected = learningMode == LearningMode.TEXT,
+                        modifier = Modifier.weight(1f),
+                        onClick = { viewModel.onLearningModeChange(LearningMode.TEXT) }
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -88,36 +127,11 @@ fun TopicScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Danh sách",
+                    text = "Danh sách chủ đề",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF333333)
                 )
-                
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = Color.White,
-                    shadowElevation = 1.dp
-                ) {
-                    Row(
-                        modifier = Modifier.padding(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.GridView,
-                            contentDescription = null,
-                            tint = Color(0xFF2196F3),
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.List,
-                            contentDescription = null,
-                            tint = Color.LightGray,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -238,7 +252,7 @@ fun TopicItem(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .alpha(if (isLocked) 0.6f else 1f) // Làm mờ nếu bị khóa
+            .alpha(if (isLocked) 0.6f else 1f)
             .clickable(enabled = !isLocked) { onClick() },
         shape = RoundedCornerShape(16.dp),
         color = Color.White,
@@ -291,19 +305,6 @@ fun TopicItem(
                     contentDescription = "Locked",
                     tint = Color.Gray,
                     modifier = Modifier.size(20.dp)
-                )
-            } else if (topicState.isCompleted) {
-                Icon(
-                    imageVector = Icons.Default.CheckCircle,
-                    contentDescription = "Completed",
-                    tint = Color(0xFF4CAF50),
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    imageVector = Icons.Default.ChevronRight,
-                    contentDescription = null,
-                    tint = Color.LightGray
                 )
             } else {
                 Icon(

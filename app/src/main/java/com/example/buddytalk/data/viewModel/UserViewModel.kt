@@ -24,12 +24,12 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             repository.getUser().collect {
                 if (it == null) {
-                    // Initial data if DB is empty
                     val defaultUser = UserEntity(
                         userName = "Anonymous",
                         level = 19,
                         rank = "Hạng VI",
-                        streak = 17
+                        streak = 17,
+                        avatarUrl = null
                     )
                     repository.insertUser(defaultUser)
                 } else {
@@ -43,6 +43,14 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _user.value?.let {
                 repository.updateUserName(newName, it)
+            }
+        }
+    }
+
+    fun updateAvatar(newUrl: String) {
+        viewModelScope.launch {
+            _user.value?.let {
+                repository.updateAvatar(newUrl, it)
             }
         }
     }

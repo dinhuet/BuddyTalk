@@ -16,9 +16,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.buddytalk.data.viewModel.UserViewModel
 import com.example.buddytalk.ui.theme.*
 
@@ -28,23 +31,33 @@ fun HomeScreen(viewModel: UserViewModel, onNavigateToSettings: () -> Unit) {
     
     val user = userState ?: return
 
-    Scaffold(
-        bottomBar = { BottomNavigationBar() },
-        containerColor = AppBackground
-    ) { innerPadding ->
+    Box(modifier = Modifier.fillMaxSize().background(AppBackground)) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+            modifier = Modifier.fillMaxSize()
         ) {
             HeaderSection(
                 userName = user.userName,
                 onSettingsClick = onNavigateToSettings
             )
-            Spacer(modifier = Modifier.height(16.dp))
-            MainProfileCard(level = user.level, rank = user.rank)
-            Spacer(modifier = Modifier.height(16.dp))
-            BottomCardsRow(streak = user.streak)
+            
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 0.dp)
+            ) {
+                Spacer(modifier = Modifier.height(16.dp))
+                MainProfileCard(
+                    level = user.level, 
+                    rank = user.rank,
+                    avatarUrl = user.avatarUrl
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                BottomCardsRow(streak = user.streak)
+                
+                Spacer(modifier = Modifier.weight(1f))
+                BottomNavigationBar()
+                Spacer(modifier = Modifier.height(12.dp))
+            }
         }
     }
 }
@@ -54,18 +67,19 @@ fun HeaderSection(userName: String, onSettingsClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(140.dp)
+            .wrapContentHeight()
             .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
             .background(
                 Brush.verticalGradient(
                     colors = listOf(HeaderBlue, HeaderBlueLight)
                 )
             )
-            .padding(24.dp)
+            .statusBarsPadding() // Đẩy nội dung xuống dưới Status Bar
+            .padding(horizontal = 24.dp, vertical = 32.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxWidth()
         ) {
             Box(
                 modifier = Modifier
@@ -74,7 +88,7 @@ fun HeaderSection(userName: String, onSettingsClick: () -> Unit) {
                     .background(Color.White),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Face, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(40.dp))
+                Text(text = "🦉", fontSize = 32.sp)
             }
             
             Spacer(modifier = Modifier.width(12.dp))
@@ -102,7 +116,7 @@ fun HeaderSection(userName: String, onSettingsClick: () -> Unit) {
 }
 
 @Composable
-fun MainProfileCard(level: Int, rank: String) {
+fun MainProfileCard(level: Int, rank: String, avatarUrl: String?) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -125,7 +139,21 @@ fun MainProfileCard(level: Int, rank: String) {
                         .background(Color(0xFFE3F2FD)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(80.dp), tint = ButtonYellow)
+                    if (avatarUrl != null) {
+                        AsyncImage(
+                            model = avatarUrl,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.Person, 
+                            contentDescription = null, 
+                            modifier = Modifier.size(80.dp), 
+                            tint = ButtonYellow
+                        )
+                    }
                 }
                 Surface(
                     shape = RoundedCornerShape(12.dp),
@@ -161,18 +189,40 @@ fun MainProfileCard(level: Int, rank: String) {
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            Button(
-                onClick = { },
-                colors = ButtonDefaults.buttonColors(containerColor = ButtonYellow),
-                shape = RoundedCornerShape(16.dp),
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 32.dp)
-                    .height(56.dp)
+                    .height(64.dp),
+                contentAlignment = Alignment.BottomCenter
             ) {
-                Icon(Icons.Default.Star, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = "XEM BÀI HỌC", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .background(Color(0xFFD48D06), shape = RoundedCornerShape(24.dp))
+                )
+                Button(
+                    onClick = { },
+                    colors = ButtonDefaults.buttonColors(containerColor = ButtonYellow),
+                    shape = RoundedCornerShape(24.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .offset(y = (-6).dp)
+                        .height(56.dp),
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = "🏆", fontSize = 20.sp)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "XEM BÀI HỌC", 
+                            fontWeight = FontWeight.Black, 
+                            fontSize = 18.sp,
+                            color = Color(0xFF1E3A8A)
+                        )
+                    }
+                }
             }
         }
     }
@@ -224,20 +274,52 @@ fun BottomCardsRow(streak: Int) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Brush.verticalGradient(colors = listOf(StreakOrangeLight, StreakOrange)))
-                    .padding(16.dp)
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                Color(0xFFEBC85E),
+                                Color(0xFF77B5FE)
+                            )
+                        )
+                    )
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Column {
-                    Text(text = "CHUỖI", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Text(text = "$streak", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 48.sp)
-                    Text(text = "Cố gắng lên!", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "CHUỖI",
+                        color = Color.White,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 14.sp
+                    )
+                    
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "$streak",
+                            color = Color.White,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 48.sp,
+                            fontStyle = FontStyle.Italic
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(text = "🔥", fontSize = 24.sp)
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Surface(
+                        color = Color.White.copy(alpha = 0.3f),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text(
+                            text = "Cố gắng lên!",
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                        )
+                    }
                 }
-                Icon(
-                    Icons.Default.Favorite,
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.3f),
-                    modifier = Modifier.size(60.dp).align(Alignment.CenterEnd)
-                )
             }
         }
     }
@@ -267,7 +349,7 @@ fun BottomNavigationBar() {
         modifier = Modifier
             .fillMaxWidth()
             .height(80.dp)
-            .padding(horizontal = 24.dp, vertical = 12.dp),
+            .padding(horizontal = 24.dp),
         shape = RoundedCornerShape(24.dp),
         color = Color.White,
         shadowElevation = 8.dp

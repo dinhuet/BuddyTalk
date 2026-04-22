@@ -55,6 +55,7 @@ fun LessonScreen(
         mediaPlayer?.release()
         
         val resId = context.resources.getIdentifier(soundName, "raw", context.packageName)
+        // Nếu không tìm thấy file theo định dạng, dùng default_sound
         val finalResId = if (resId != 0) resId else context.resources.getIdentifier("default_sound", "raw", context.packageName)
         
         if (finalResId != 0) {
@@ -78,12 +79,13 @@ fun LessonScreen(
         val currentLesson = uiState.lessons.getOrNull(uiState.currentIndex)
         currentLesson?.let { lesson ->
             if (mode == "TEXT") {
-                // Phát idLesson_1 rồi đến idLesson_2
-                playSoundInternal("${lesson.name}_1") {
-                    playSoundInternal("${lesson.name}_2")
+                // Thẻ chữ: sound{lessonId}_1.mp3 và sound{lessonId}_2.mp3
+                playSoundInternal("sound${lesson.id}_1") {
+                    playSoundInternal("sound${lesson.id}_2")
                 }
             } else {
-                playSoundInternal(lesson.name)
+                // Thẻ hình ảnh: sound{lessonId}.mp3
+                playSoundInternal("sound${lesson.id}")
             }
         }
     }
@@ -124,7 +126,7 @@ fun LessonScreen(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Động vật",
+                text = if (mode == "TEXT") "Thẻ chữ" else "Thẻ hình ảnh",
                 color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
@@ -145,12 +147,12 @@ fun LessonScreen(
                 if (mode == "TEXT") {
                     TextLessonContent(
                         lesson = currentLesson,
-                        onWordClick = { playSoundInternal("${currentLesson.name}_2") }
+                        onWordClick = { playSoundInternal("sound${currentLesson.id}_2") }
                     )
                 } else {
                     ImageLessonContent(
                         lesson = currentLesson,
-                        onImageClick = { playSoundInternal(currentLesson.name) }
+                        onImageClick = { playSoundInternal("sound${currentLesson.id}") }
                     )
                 }
             }
@@ -187,11 +189,11 @@ fun LessonScreen(
                 onClick = {
                     currentLesson?.let { lesson ->
                         if (mode == "TEXT") {
-                            playSoundInternal("${lesson.name}_1") {
-                                playSoundInternal("${lesson.name}_2")
+                            playSoundInternal("sound${lesson.id}_1") {
+                                playSoundInternal("sound${lesson.id}_2")
                             }
                         } else {
-                            playSoundInternal(lesson.name)
+                            playSoundInternal("sound${lesson.id}")
                         }
                     }
                 }

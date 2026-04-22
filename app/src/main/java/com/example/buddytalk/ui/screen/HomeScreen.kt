@@ -23,7 +23,11 @@ import com.example.buddytalk.data.viewModel.UserViewModel
 import com.example.buddytalk.ui.theme.*
 
 @Composable
-fun HomeScreen(viewModel: UserViewModel, onNavigateToSettings: () -> Unit) {
+fun HomeScreen(
+    viewModel: UserViewModel,
+    onNavigateToSettings: () -> Unit,
+    onNavigateToTopics: () -> Unit
+) {
     val userState by viewModel.user.collectAsState()
     
     val user = userState ?: return
@@ -42,7 +46,11 @@ fun HomeScreen(viewModel: UserViewModel, onNavigateToSettings: () -> Unit) {
                 onSettingsClick = onNavigateToSettings
             )
             Spacer(modifier = Modifier.height(16.dp))
-            MainProfileCard(level = user.level, rank = user.rank)
+            MainProfileCard(
+                level = user.level,
+                rank = user.rank,
+                onViewLessonsClick = onNavigateToTopics
+            )
             Spacer(modifier = Modifier.height(16.dp))
             BottomCardsRow(streak = user.streak)
         }
@@ -102,7 +110,7 @@ fun HeaderSection(userName: String, onSettingsClick: () -> Unit) {
 }
 
 @Composable
-fun MainProfileCard(level: Int, rank: String) {
+fun MainProfileCard(level: Int, rank: String, onViewLessonsClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -162,7 +170,7 @@ fun MainProfileCard(level: Int, rank: String) {
             Spacer(modifier = Modifier.height(24.dp))
             
             Button(
-                onClick = { },
+                onClick = onViewLessonsClick,
                 colors = ButtonDefaults.buttonColors(containerColor = ButtonYellow),
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier

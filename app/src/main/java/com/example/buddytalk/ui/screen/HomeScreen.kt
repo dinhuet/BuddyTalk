@@ -127,17 +127,17 @@ fun HomeScreen(
             subtitle = "TIẾP TỤC ${uiState.currentLesson}",
             icon = "📚",
             color = Color(0xFF2196F3),
-            onClick = { navController.navigate(Routes.Topics.route) }
+            onClick = { navController.navigate(Routes.Topics.createRoute("learn")) }
         )
         
         Spacer(modifier = Modifier.height(16.dp))
         
         ActionCard(
-            title = "Thi",
+            title = "Luyện tập",
             subtitle = "KIỂM TRA NĂNG LỰC",
             icon = "🎯",
             color = Color(0xFFA855F7),
-            onClick = { /* Not routed yet */ }
+            onClick = { navController.navigate(Routes.Topics.createRoute("practice")) }
         )
         
         Spacer(modifier = Modifier.height(16.dp))

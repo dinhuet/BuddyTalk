@@ -66,6 +66,16 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
     
+    fun setCurrentIndex(index: Int) {
+        _uiState.update { state ->
+            if (index in state.lessons.indices) {
+                state.copy(currentIndex = index)
+            } else {
+                state
+            }
+        }
+    }
+    
     fun resetFinish() {
         _uiState.update { it.copy(isFinished = false) }
     }

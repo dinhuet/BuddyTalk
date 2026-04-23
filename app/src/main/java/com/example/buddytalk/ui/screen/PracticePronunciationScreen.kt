@@ -1,14 +1,20 @@
 package com.example.buddytalk.ui.screen
 
+import android.media.MediaPlayer
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,18 +22,93 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.buddytalk.ui.theme.HeaderBlue
+import com.example.buddytalk.data.viewModel.LessonViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun PracticePronunciationScreen(
     navController: NavController,
     topicId: Long,
-    type: String // "sentence" or "vocabulary"
+    type: String, // "sentence" or "vocabulary"
+    viewModel: LessonViewModel = viewModel()
 ) {
+    val context = LocalContext.current
+    val uiState by viewModel.uiState.collectAsState()
+    var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
+    val coroutineScope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
+
+    // Hàm phát âm thanh
+    fun playSoundInternal(soundName: String, onComplete: () -> Unit = {}) {
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
+        
+        val resId = context.resources.getIdentifier(soundName, "raw", context.packageName)
+        val finalResId = if (resId != 0) resId else context.resources.getIdentifier("default_sound", "raw", context.packageName)
+        
+        if (finalResId != 0) {
+            mediaPlayer = MediaPlayer.create(context, finalResId).apply {
+                setOnCompletionListener { 
+                    it.release()
+                    if (mediaPlayer == it) mediaPlayer = null
+                    onComplete()
+                }
+                start()
+            }
+        }
+    }
+
+    // Tải bài học
+    LaunchedEffect(topicId, type) {
+        val mode = if (type == "vocabulary") "TEXT" else "SENTENCE"
+        viewModel.loadLessons(topicId, mode)
+    }
+
+    // Tự động phát âm thanh khi vào câu mới
+    LaunchedEffect(uiState.currentIndex, uiState.lessons) {
+        val currentLesson = uiState.lessons.getOrNull(uiState.currentIndex)
+        currentLesson?.let { lesson ->
+            playSoundInternal("sound${lesson.id}_2")
+            // Tự động cuộn đến item đang chọn
+            if (uiState.lessons.isNotEmpty()) {
+                coroutineScope.launch {
+                    listState.animateScrollToItem(uiState.currentIndex)
+                }
+            }
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            mediaPlayer?.stop()
+            mediaPlayer?.release()
+            mediaPlayer = null
+        }
+    }
+
+    if (uiState.isLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    if (uiState.isFinished) {
+        CompletionScreen(onBack = { 
+            viewModel.resetFinish()
+            navController.popBackStack() 
+        })
+        return
+    }
+
+    val currentLesson = uiState.lessons.getOrNull(uiState.currentIndex)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -61,72 +142,116 @@ fun PracticePronunciationScreen(
                     ) {
                         Text(text = "🦉", fontSize = 32.sp)
                     }
+
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text("CHÀO BÉ!", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         Text("Sẵn sàng chưa?", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     }
                 }
-                Icon(Icons.Default.Settings, contentDescription = null, tint = Color.White.copy(alpha = 0.8f))
             }
         }
 
-        // Progress Steps
+        // Question Selector Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 24.dp, horizontal = 40.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+                .padding(vertical = 16.dp, horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            StepItem(number = "1", isCompleted = true, isCurrent = true)
-            Divider(modifier = Modifier.weight(1f).height(2.dp).padding(horizontal = 8.dp), color = Color(0xFFE5E7EB))
-            StepItem(number = "2", isCompleted = false, isCurrent = false)
-            Divider(modifier = Modifier.weight(1f).height(2.dp).padding(horizontal = 8.dp), color = Color(0xFFE5E7EB))
-            StepItem(number = "3", isCompleted = false, isCurrent = false)
+            IconButton(
+                onClick = { 
+                    coroutineScope.launch {
+                        val targetIndex = maxOf(0, listState.firstVisibleItemIndex - 1)
+                        listState.animateScrollToItem(targetIndex)
+                    }
+                },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(Icons.Default.ChevronLeft, contentDescription = null, tint = Color.Gray)
+            }
+
+            LazyRow(
+                state = listState,
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp)
+            ) {
+                itemsIndexed(uiState.lessons) { index, _ ->
+                    val isSelected = uiState.currentIndex == index
+                    Surface(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clickable { viewModel.setCurrentIndex(index) },
+                        shape = CircleShape,
+                        color = if (isSelected) Color(0xFF2563EB) else Color(0xFFF3F4F6),
+                        border = if (isSelected) null else BorderStroke(1.dp, Color(0xFFE5E7EB))
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = (index + 1).toString(),
+                                color = if (isSelected) Color.White else Color.Gray,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                }
+            }
+
+            IconButton(
+                onClick = { 
+                    coroutineScope.launch {
+                        val targetIndex = minOf(uiState.lessons.size - 1, listState.firstVisibleItemIndex + 1)
+                        listState.animateScrollToItem(targetIndex)
+                    }
+                },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.Gray)
+            }
         }
 
         // Word Card
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .height(120.dp),
-            shape = RoundedCornerShape(32.dp),
-            color = Color.White,
-            shadowElevation = 2.dp,
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5E7EB))
-        ) {
-            Row(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+        if (currentLesson != null) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .height(120.dp),
+                shape = RoundedCornerShape(32.dp),
+                color = Color.White,
+                shadowElevation = 2.dp,
+                border = BorderStroke(1.dp, Color(0xFFE5E7EB))
             ) {
-                Column {
-                    Text("PHÁT ÂM TỪ", color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Row(verticalAlignment = Alignment.Bottom) {
+                Row(
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "DOG",
-                            fontSize = 40.sp,
+                            text = if (type == "vocabulary") "LUYỆN TẬP TỪ" else "LUYỆN TẬP CÂU", 
+                            color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = currentLesson.word.uppercase(),
+                            fontSize = if (currentLesson.word.length > 8) 32.sp else 40.sp,
                             fontWeight = FontWeight.Black,
                             color = Color(0xFF1E3A8A)
                         )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = "[dɔɡ]",
-                            fontSize = 24.sp,
-                            color = Color.LightGray
-                        )
                     }
-                }
-                
-                Surface(
-                    modifier = Modifier.size(56.dp),
-                    shape = CircleShape,
-                    color = Color(0xFFDBEAFE)
-                ) {
-                    IconButton(onClick = { /* Play Audio */ }) {
-                        Icon(Icons.Default.VolumeUp, contentDescription = null, tint = Color(0xFF2563EB), modifier = Modifier.size(28.dp))
+                    
+                    Surface(
+                        modifier = Modifier.size(56.dp),
+                        shape = CircleShape,
+                        color = Color(0xFFDBEAFE)
+                    ) {
+                        IconButton(onClick = { 
+                            playSoundInternal("sound${currentLesson.id}_2")
+                        }) {
+                            Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = null, tint = Color(0xFF2563EB), modifier = Modifier.size(28.dp))
+                        }
                     }
                 }
             }
@@ -140,13 +265,11 @@ fun PracticePronunciationScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(contentAlignment = Alignment.Center) {
-                // Outer circle
                 Surface(
                     modifier = Modifier.size(160.dp),
                     shape = CircleShape,
                     color = Color(0xFFDBEAFE).copy(alpha = 0.5f)
                 ) {}
-                // Inner blue circle
                 Surface(
                     modifier = Modifier.size(120.dp),
                     shape = CircleShape,
@@ -186,7 +309,7 @@ fun PracticePronunciationScreen(
                 .height(56.dp),
             shape = RoundedCornerShape(20.dp),
             color = Color.Transparent,
-            border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFFDBEAFE).copy(alpha = 0.8f))
+            border = BorderStroke(2.dp, Color(0xFFDBEAFE).copy(alpha = 0.8f))
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Text(
@@ -200,7 +323,7 @@ fun PracticePronunciationScreen(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Bottom Navigation Buttons
+        // Navigation Buttons
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -208,17 +331,30 @@ fun PracticePronunciationScreen(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Button(
-                onClick = { navController.popBackStack() },
+                onClick = { 
+                    if (uiState.currentIndex > 0) {
+                        viewModel.previousLesson()
+                    } else {
+                        navController.popBackStack()
+                    }
+                },
                 modifier = Modifier.weight(1f).height(56.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White),
                 shape = RoundedCornerShape(16.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5E7EB))
+                border = BorderStroke(1.dp, Color(0xFFE5E7EB))
             ) {
-                Text("QUAY LẠI", color = Color.LightGray, fontWeight = FontWeight.Bold)
+                Text(
+                    text = if (uiState.currentIndex > 0) "QUAY LẠI" else "THOÁT", 
+                    color = Color.Gray, 
+                    fontWeight = FontWeight.Bold
+                )
             }
             
             Button(
-                onClick = { /* Next question */ },
+                onClick = { 
+                    mediaPlayer?.stop()
+                    viewModel.nextLesson() 
+                },
                 modifier = Modifier.weight(1f).height(56.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00C853)),
                 shape = RoundedCornerShape(16.dp)
@@ -229,23 +365,6 @@ fun PracticePronunciationScreen(
                     Text("👉", fontSize = 16.sp)
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun StepItem(number: String, isCompleted: Boolean, isCurrent: Boolean) {
-    Surface(
-        modifier = Modifier.size(36.dp),
-        shape = CircleShape,
-        color = if (isCurrent) Color(0xFF2563EB) else if (isCompleted) Color(0xFFDBEAFE) else Color(0xFFF3F4F6)
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(
-                text = number,
-                color = if (isCurrent) Color.White else if (isCompleted) Color(0xFF2563EB) else Color.Gray,
-                fontWeight = FontWeight.Bold
-            )
         }
     }
 }

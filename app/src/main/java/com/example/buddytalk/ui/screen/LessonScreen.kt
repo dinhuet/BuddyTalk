@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -291,15 +292,19 @@ fun ImageLessonContent(lesson: Lesson, onImageClick: () -> Unit) {
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .padding(24.dp)
-                    .background(Color(0xFFF8F9FA), RoundedCornerShape(16.dp)),
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFFF8F9FA)),
                 contentAlignment = Alignment.Center
             ) {
-                val imageRes = getDrawableId(context, lesson.name)
+                val imageName = "image${lesson.id}"
+                val imageRes = getDrawableId(context, imageName)
+                val finalImageRes = if (imageRes != 0) imageRes else context.resources.getIdentifier("default_image", "drawable", context.packageName)
+
                 Image(
-                    painter = painterResource(id = if (imageRes != 0) imageRes else R.drawable.ic_launcher_foreground),
+                    painter = painterResource(id = if (finalImageRes != 0) finalImageRes else R.drawable.ic_launcher_foreground),
                     contentDescription = lesson.word,
-                    modifier = Modifier.size(150.dp)
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
                 )
             }
             

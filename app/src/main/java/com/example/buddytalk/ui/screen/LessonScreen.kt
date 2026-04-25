@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -55,6 +56,7 @@ fun LessonScreen(
         mediaPlayer?.release()
         
         val resId = context.resources.getIdentifier(soundName, "raw", context.packageName)
+        // Nếu không tìm thấy file theo định dạng, dùng default_sound
         val finalResId = if (resId != 0) resId else context.resources.getIdentifier("default_sound", "raw", context.packageName)
         
         if (finalResId != 0) {
@@ -78,12 +80,13 @@ fun LessonScreen(
         val currentLesson = uiState.lessons.getOrNull(uiState.currentIndex)
         currentLesson?.let { lesson ->
             if (mode == "TEXT") {
-                // Phát idLesson_1 rồi đến idLesson_2
-                playSoundInternal("${lesson.name}_1") {
-                    playSoundInternal("${lesson.name}_2")
+                // Thẻ chữ: sound{lessonId}_1.mp3 và sound{lessonId}_2.mp3
+                playSoundInternal("sound${lesson.id}_1") {
+                    playSoundInternal("sound${lesson.id}_2")
                 }
             } else {
-                playSoundInternal(lesson.name)
+                // Thẻ hình ảnh: sound{lessonId}.mp3
+                playSoundInternal("sound${lesson.id}")
             }
         }
     }
@@ -124,7 +127,7 @@ fun LessonScreen(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Động vật",
+                text = if (mode == "TEXT") "Thẻ chữ" else "Thẻ hình ảnh",
                 color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
@@ -145,12 +148,12 @@ fun LessonScreen(
                 if (mode == "TEXT") {
                     TextLessonContent(
                         lesson = currentLesson,
-                        onWordClick = { playSoundInternal("${currentLesson.name}_2") }
+                        onWordClick = { playSoundInternal("sound${currentLesson.id}_2") }
                     )
                 } else {
                     ImageLessonContent(
                         lesson = currentLesson,
-                        onImageClick = { playSoundInternal(currentLesson.name) }
+                        onImageClick = { playSoundInternal("sound${currentLesson.id}") }
                     )
                 }
             }
@@ -187,11 +190,11 @@ fun LessonScreen(
                 onClick = {
                     currentLesson?.let { lesson ->
                         if (mode == "TEXT") {
-                            playSoundInternal("${lesson.name}_1") {
-                                playSoundInternal("${lesson.name}_2")
+                            playSoundInternal("sound${lesson.id}_1") {
+                                playSoundInternal("sound${lesson.id}_2")
                             }
                         } else {
-                            playSoundInternal(lesson.name)
+                            playSoundInternal("sound${lesson.id}")
                         }
                     }
                 }
@@ -289,15 +292,19 @@ fun ImageLessonContent(lesson: Lesson, onImageClick: () -> Unit) {
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .padding(24.dp)
-                    .background(Color(0xFFF8F9FA), RoundedCornerShape(16.dp)),
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFFF8F9FA)),
                 contentAlignment = Alignment.Center
             ) {
-                val imageRes = getDrawableId(context, lesson.name)
+                val imageName = "image${lesson.id}"
+                val imageRes = getDrawableId(context, imageName)
+                val finalImageRes = if (imageRes != 0) imageRes else context.resources.getIdentifier("default_image", "drawable", context.packageName)
+
                 Image(
-                    painter = painterResource(id = if (imageRes != 0) imageRes else R.drawable.ic_launcher_foreground),
+                    painter = painterResource(id = if (finalImageRes != 0) finalImageRes else R.drawable.ic_launcher_foreground),
                     contentDescription = lesson.word,
-                    modifier = Modifier.size(150.dp)
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
                 )
             }
             

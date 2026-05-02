@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -65,7 +66,7 @@ fun PracticePronunciationScreen(
     val feedbackColor = when {
         !uiState.isModelLoaded -> Color.Gray
         uiState.isListening -> Color(0xFF2563EB)
-        uiState.recognizedText.isNotEmpty() -> Color(0xFF00C853)
+        uiState.recognizedText.isNotEmpty() -> if (uiState.isCorrect) Color(0xFF00C853) else Color.Red
         else -> Color(0xFFBFDBFE)
     }
 
@@ -209,24 +210,72 @@ fun PracticePronunciationScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Feedback Box (Now shows recognized text)
-        Surface(modifier = Modifier.fillMaxWidth().padding(horizontal = 48.dp).height(80.dp), shape = RoundedCornerShape(20.dp), color = Color.Transparent, border = BorderStroke(2.dp, feedbackColor.copy(alpha = 0.8f))) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(
-                    text = feedbackText,
-                    color = feedbackColor,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp,
-                    fontSize = 15.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
+        // THAY THẾ: Hiển thị Perfect hoặc Feedback Box tùy thuộc vào uiState.isCorrect
+        if (uiState.isCorrect) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .height(80.dp),
+                shape = RoundedCornerShape(24.dp),
+                color = Color.White,
+                shadowElevation = 2.dp,
+                border = BorderStroke(1.dp, Color(0xFFE5E7EB))
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Surface(
+                        color = Color(0xFFE8F5E9),
+                        shape = RoundedCornerShape(20.dp)
+                    ) {
+                        Text(
+                            text = "Perfect!",
+                            color = Color(0xFF00C853),
+                            fontWeight = FontWeight.Black,
+                            fontSize = 20.sp,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        repeat(5) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = null,
+                                tint = Color(0xFFFFD600),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        } else {
+            // Feedback Box (Chỉ hiển thị khi chưa nói chính xác)
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 48.dp).height(80.dp),
+                shape = RoundedCornerShape(20.dp),
+                color = Color.Transparent,
+                border = BorderStroke(2.dp, feedbackColor.copy(alpha = 0.8f))
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = feedbackText,
+                        color = feedbackColor,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.5.sp,
+                        fontSize = 15.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                }
             }
         }
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Nav Buttons
+        // Nav Buttons (Quay lại / Câu tiếp giữ nguyên vị trí)
         Row(modifier = Modifier.fillMaxWidth().padding(24.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Button(onClick = { if (uiState.currentIndex > 0) viewModel.previousLesson() else navController.popBackStack() }, modifier = Modifier.weight(1f).height(56.dp), colors = ButtonDefaults.buttonColors(containerColor = Color.White), shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, Color(0xFFE5E7EB))) {
                 Text(text = if (uiState.currentIndex > 0) "QUAY LẠI" else "THOÁT", color = Color.Gray, fontWeight = FontWeight.Bold)

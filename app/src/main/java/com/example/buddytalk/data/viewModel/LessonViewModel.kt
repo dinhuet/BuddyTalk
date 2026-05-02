@@ -21,6 +21,7 @@ data class LessonUiState(
     val partialText: String = "",
     val isListening: Boolean = false,
     val isCorrect: Boolean = false,
+    val completedIndices: Set<Int> = emptySet(),
     val errorMessage: String? = null
 )
 
@@ -69,11 +70,14 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
         // Simple comparison logic
         val isMatch = recognizedWord.contains(targetWord) || targetWord.contains(recognizedWord)
         
-        _uiState.update { it.copy(
-            recognizedText = text,
-            partialText = "",
-            isCorrect = isMatch
-        ) }
+        _uiState.update { state ->
+            state.copy(
+                recognizedText = text,
+                partialText = "",
+                isCorrect = isMatch,
+                completedIndices = if (isMatch) state.completedIndices + state.currentIndex else state.completedIndices
+            )
+        }
     }
 
     fun startListening() {
@@ -118,7 +122,8 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
                         lessons = filteredLessons,
                         isLoading = false,
                         currentIndex = 0,
-                        isFinished = false
+                        isFinished = false,
+                        completedIndices = emptySet()
                     ) }
                 }
         }

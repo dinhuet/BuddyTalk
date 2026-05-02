@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Mic
@@ -144,11 +145,47 @@ fun PracticePronunciationScreen(
             IconButton(onClick = { coroutineScope.launch { listState.animateScrollToItem(maxOf(0, listState.firstVisibleItemIndex - 1)) } }, modifier = Modifier.size(32.dp)) {
                 Icon(Icons.Default.ChevronLeft, contentDescription = null, tint = Color.Gray)
             }
-            LazyRow(state = listState, modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(horizontal = 4.dp)) {
+            LazyRow(state = listState, modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(horizontal = 8.dp)) {
                 itemsIndexed(uiState.lessons) { index, _ ->
                     val isSelected = uiState.currentIndex == index
-                    Surface(modifier = Modifier.size(36.dp).clickable { viewModel.setCurrentIndex(index) }, shape = CircleShape, color = if (isSelected) Color(0xFF2563EB) else Color(0xFFF3F4F6), border = if (isSelected) null else BorderStroke(1.dp, Color(0xFFE5E7EB))) {
-                        Box(contentAlignment = Alignment.Center) { Text(text = (index + 1).toString(), color = if (isSelected) Color.White else Color.Gray, fontWeight = FontWeight.Bold, fontSize = 14.sp) }
+                    val isCorrect = uiState.completedIndices.contains(index)
+                    
+                    Box(contentAlignment = Alignment.TopEnd) {
+                        Surface(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clickable { viewModel.setCurrentIndex(index) },
+                            shape = CircleShape,
+                            color = if (isSelected) Color(0xFF2563EB) else Color(0xFFF3F4F6),
+                            border = if (isSelected) null else BorderStroke(1.dp, Color(0xFFE5E7EB))
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = (index + 1).toString(),
+                                    color = if (isSelected) Color.White else Color.Gray,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                )
+                            }
+                        }
+                        
+                        if (isCorrect) {
+                            Surface(
+                                modifier = Modifier
+                                    .size(14.dp)
+                                    .offset(x = 4.dp, y = (-4).dp),
+                                shape = CircleShape,
+                                color = Color(0xFF00C853),
+                                border = BorderStroke(1.5.dp, Color.White)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.padding(2.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }

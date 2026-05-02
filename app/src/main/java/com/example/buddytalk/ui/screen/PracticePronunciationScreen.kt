@@ -3,10 +3,7 @@ package com.example.buddytalk.ui.screen
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
-import android.media.AudioFormat
-import android.media.AudioRecord
 import android.media.MediaPlayer
-import android.media.MediaRecorder
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -33,18 +30,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.buddytalk.data.viewModel.LessonViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
+import com.example.buddytalk.ui.component.CompletionScreen
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlin.math.log10
-import kotlin.math.sqrt
 
 @SuppressLint("MissingPermission")
 @Composable
@@ -60,18 +54,22 @@ fun PracticePronunciationScreen(
     val coroutineScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
 
-    // Recording states
-    var isRecording by remember { mutableStateOf(false) }
-    var feedbackText by remember { mutableStateOf("ĐANG CHỜ BÉ...") }
-    var feedbackColor by remember { mutableStateOf(Color(0xFFBFDBFE)) }
+    // Status mapping based on Vosk state
+    val feedbackText = when {
+        !uiState.isModelLoaded -> "ĐANG TẢI DỮ LIỆU..."
+        uiState.isListening -> if (uiState.partialText.isEmpty()) "CON NÓI ĐI, BÉ ĐANG NGHE..." else uiState.partialText.uppercase()
+        uiState.recognizedText.isNotEmpty() -> uiState.recognizedText.uppercase()
+        else -> "ĐANG CHỜ BÉ..."
+    }
 
-    // AudioRecord configurations
-    val sampleRate = 44100
-    val channelConfig = AudioFormat.CHANNEL_IN_MONO
-    val audioFormat = AudioFormat.ENCODING_PCM_16BIT
-    val bufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat)
+    val feedbackColor = when {
+        !uiState.isModelLoaded -> Color.Gray
+        uiState.isListening -> Color(0xFF2563EB)
+        uiState.recognizedText.isNotEmpty() -> Color(0xFF00C853)
+        else -> Color(0xFFBFDBFE)
+    }
 
-    // Hàm phát âm thanh
+    // Function to play sound
     fun playSoundInternal(soundName: String, onComplete: () -> Unit = {}) {
         mediaPlayer?.stop()
         mediaPlayer?.release()
@@ -79,7 +77,7 @@ fun PracticePronunciationScreen(
         val finalResId = if (resId != 0) resId else context.resources.getIdentifier("default_sound", "raw", context.packageName)
         if (finalResId != 0) {
             mediaPlayer = MediaPlayer.create(context, finalResId).apply {
-                setOnCompletionListener { 
+                setOnCompletionListener {
                     it.release()
                     if (mediaPlayer == it) mediaPlayer = null
                     onComplete()
@@ -89,7 +87,7 @@ fun PracticePronunciationScreen(
         }
     }
 
-    // Tải bài học
+    // Load lessons
     LaunchedEffect(topicId, type) {
         val mode = if (type == "vocabulary") "TEXT" else "SENTENCE"
         viewModel.loadLessons(topicId, mode)
@@ -104,89 +102,9 @@ fun PracticePronunciationScreen(
         }
     }
 
-    // Logic xử lý AudioRecord
-    fun startRecordingLogic() {
-        // Kiểm tra quyền
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            feedbackText = "Chưa cấp quyền ghi âm!"
-            feedbackColor = Color.Red
-            return
-        }
-
-        if (bufferSize <= 0) {
-            feedbackText = "Lỗi phần cứng ghi âm"
-            feedbackColor = Color.Red
-            return
-        }
-
-        isRecording = true
-        feedbackText = "CON ĐANG NÓI..."
-        feedbackColor = Color(0xFF2563EB)
-        
-        coroutineScope.launch(Dispatchers.IO) {
-            var audioRecord: AudioRecord? = null
-            try {
-                audioRecord = AudioRecord(
-                    MediaRecorder.AudioSource.MIC,
-                    sampleRate, channelConfig, audioFormat, bufferSize
-                )
-                
-                if (audioRecord.state != AudioRecord.STATE_INITIALIZED) {
-                    throw Exception("Microphone bận hoặc không khả dụng")
-                }
-
-                audioRecord.startRecording()
-                val buffer = ShortArray(bufferSize)
-                
-                while (isRecording) {
-                    val readSize = audioRecord.read(buffer, 0, buffer.size)
-                    if (readSize > 0) {
-                        var sum = 0.0
-                        for (i in 0 until readSize) {
-                            sum += buffer[i] * buffer[i]
-                        }
-                        val rms = sqrt(sum / readSize)
-                        val db = if (rms > 0) 20 * log10(rms) else 0.0
-                        
-                        // Kiểm tra tiếng ồn
-                        if (db > 60.0) {
-                            withContext(Dispatchers.Main) {
-                                isRecording = false
-                                feedbackText = "Không nghe rõ, vui lòng thử lại ở nơi yên tĩnh"
-                                feedbackColor = Color.Red
-                            }
-                            break
-                        }
-                    }
-                    delay(100)
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    isRecording = false
-                    feedbackText = "Lỗi: ${e.message}"
-                    feedbackColor = Color.Red
-                }
-            } finally {
-                try {
-                    audioRecord?.stop()
-                } catch (e: Exception) {}
-                audioRecord?.release()
-            }
-        }
-    }
-
-    fun stopRecordingLogic() {
-        if (isRecording) {
-            isRecording = false
-            feedbackText = "BÉ GIỎI QUÁ!"
-            feedbackColor = Color(0xFF00C853)
-        }
-    }
-
     DisposableEffect(Unit) {
         onDispose {
             mediaPlayer?.release()
-            isRecording = false
         }
     }
 
@@ -244,7 +162,7 @@ fun PracticePronunciationScreen(
                 Row(modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(text = if (type == "vocabulary") "LUYỆN TẬP TỪ" else "LUYỆN TẬP CÂU", color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        Text(text = currentLesson.word.uppercase(), fontSize = if (currentLesson.word.length > 8) 32.sp else 40.sp, fontWeight = FontWeight.Black, color = Color(0xFF1E3A8A))
+                        Text(text = currentLesson.word.uppercase(), fontSize = if (currentLesson.word.length > 8) 28.sp else 36.sp, fontWeight = FontWeight.Black, color = Color(0xFF1E3A8A))
                     }
                     Surface(modifier = Modifier.size(56.dp), shape = CircleShape, color = Color(0xFFDBEAFE)) {
                         IconButton(onClick = { playSoundInternal("sound${currentLesson.id}_2") }) {
@@ -261,35 +179,48 @@ fun PracticePronunciationScreen(
         Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.pointerInput(Unit) {
+                modifier = Modifier.pointerInput(uiState.isModelLoaded) {
+                    if (!uiState.isModelLoaded) return@pointerInput
                     detectTapGestures(
                         onPress = {
-                            try {
-                                startRecordingLogic()
-                                awaitRelease()
-                            } finally {
-                                stopRecordingLogic()
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                                try {
+                                    viewModel.startListening()
+                                    awaitRelease()
+                                } finally {
+                                    viewModel.stopListening()
+                                }
+                            } else {
+                                // Request permission or show error
                             }
                         }
                     )
                 }
             ) {
-                Surface(modifier = Modifier.size(160.dp), shape = CircleShape, color = if (isRecording) Color(0xFF2563EB).copy(alpha = 0.2f) else Color(0xFFDBEAFE).copy(alpha = 0.5f)) {}
-                Surface(modifier = Modifier.size(120.dp), shape = CircleShape, color = if (isRecording) Color(0xFF00C853) else Color(0xFF2563EB), shadowElevation = 8.dp) {
+                Surface(modifier = Modifier.size(160.dp), shape = CircleShape, color = if (uiState.isListening) Color(0xFF2563EB).copy(alpha = 0.2f) else Color(0xFFDBEAFE).copy(alpha = 0.5f)) {}
+                Surface(modifier = Modifier.size(120.dp), shape = CircleShape, color = if (!uiState.isModelLoaded) Color.Gray else if (uiState.isListening) Color(0xFF00C853) else Color(0xFF2563EB), shadowElevation = 8.dp) {
                     Icon(Icons.Default.Mic, contentDescription = null, tint = Color.White, modifier = Modifier.padding(32.dp).size(48.dp))
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
-            Text(text = "NHẤN VÀ GIỮ", fontSize = 18.sp, fontWeight = FontWeight.Black, color = Color(0xFF1E3A8A))
-            Text(text = "để bắt đầu nói nhé!", fontSize = 14.sp, color = Color.Gray)
+            Text(text = if (uiState.isModelLoaded) "NHẤN VÀ GIỮ" else "ĐANG TẢI...", fontSize = 18.sp, fontWeight = FontWeight.Black, color = Color(0xFF1E3A8A))
+            Text(text = if (uiState.isModelLoaded) "để bắt đầu nói nhé!" else "Vui lòng chờ trong giây lát", fontSize = 14.sp, color = Color.Gray)
         }
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Feedback Box
-        Surface(modifier = Modifier.fillMaxWidth().padding(horizontal = 48.dp).height(56.dp), shape = RoundedCornerShape(20.dp), color = Color.Transparent, border = BorderStroke(2.dp, feedbackColor.copy(alpha = 0.8f))) {
+        // Feedback Box (Now shows recognized text)
+        Surface(modifier = Modifier.fillMaxWidth().padding(horizontal = 48.dp).height(80.dp), shape = RoundedCornerShape(20.dp), color = Color.Transparent, border = BorderStroke(2.dp, feedbackColor.copy(alpha = 0.8f))) {
             Box(contentAlignment = Alignment.Center) {
-                Text(text = feedbackText, color = feedbackColor, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp, fontSize = 13.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.padding(horizontal = 8.dp))
+                Text(
+                    text = feedbackText,
+                    color = feedbackColor,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.5.sp,
+                    fontSize = 15.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
             }
         }
 
@@ -306,12 +237,5 @@ fun PracticePronunciationScreen(
                 }
             }
         }
-    }
-}
-
-@Composable
-fun StepItem(number: String, isCompleted: Boolean, isCurrent: Boolean) {
-    Surface(modifier = Modifier.size(36.dp), shape = CircleShape, color = if (isCurrent) Color(0xFF2563EB) else if (isCompleted) Color(0xFFDBEAFE) else Color(0xFFF3F4F6)) {
-        Box(contentAlignment = Alignment.Center) { Text(text = number, color = if (isCurrent) Color.White else if (isCompleted) Color(0xFF2563EB) else Color.Gray, fontWeight = FontWeight.Bold) }
     }
 }

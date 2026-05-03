@@ -97,7 +97,8 @@ fun PracticePronunciationScreen(
 
     LaunchedEffect(uiState.currentIndex, uiState.lessons) {
         uiState.lessons.getOrNull(uiState.currentIndex)?.let { lesson ->
-            playSoundInternal("sound${lesson.id}_2")
+            val soundName = if (type == "sentence") "sound${lesson.id}" else "sound${lesson.id}_2"
+            playSoundInternal(soundName)
             if (uiState.lessons.isNotEmpty()) {
                 coroutineScope.launch { listState.animateScrollToItem(uiState.currentIndex) }
             }
@@ -124,7 +125,7 @@ fun PracticePronunciationScreen(
 
     Column(modifier = Modifier.fillMaxSize().background(Color(0xFFF8FAFF))) {
         // Header
-        Box(modifier = Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)).background(brush = Brush.verticalGradient(colors = listOf(Color(0xFF2196F3), Color(0xFF64B5F6)))).padding(20.dp)) {
+        Box(modifier = Modifier.fillMaxWidth().height(130.dp).clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)).background(brush = Brush.verticalGradient(colors = listOf(Color(0xFF2196F3), Color(0xFF64B5F6)))).padding(20.dp)) {
             Row(modifier = Modifier.fillMaxWidth().statusBarsPadding(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(modifier = Modifier.size(50.dp), shape = RoundedCornerShape(12.dp), color = Color.White.copy(alpha = 0.2f)) {
@@ -133,10 +134,14 @@ fun PracticePronunciationScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text("CHÀO BÉ!", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        Text("Sẵn sàng chưa?", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = if (type == "vocabulary") "LUYỆN TẬP TỪ" else "LUYỆN TẬP CÂU",
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
-                Icon(Icons.Default.Settings, contentDescription = null, tint = Color.White.copy(alpha = 0.8f))
             }
         }
 
@@ -149,7 +154,7 @@ fun PracticePronunciationScreen(
                 itemsIndexed(uiState.lessons) { index, _ ->
                     val isSelected = uiState.currentIndex == index
                     val isCorrect = uiState.completedIndices.contains(index)
-                    
+
                     Box(contentAlignment = Alignment.TopEnd) {
                         Surface(
                             modifier = Modifier
@@ -168,7 +173,7 @@ fun PracticePronunciationScreen(
                                 )
                             }
                         }
-                        
+
                         if (isCorrect) {
                             Surface(
                                 modifier = Modifier
@@ -199,11 +204,18 @@ fun PracticePronunciationScreen(
             Surface(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).height(120.dp), shape = RoundedCornerShape(32.dp), color = Color.White, shadowElevation = 2.dp, border = BorderStroke(1.dp, Color(0xFFE5E7EB))) {
                 Row(modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(text = if (type == "vocabulary") "LUYỆN TẬP TỪ" else "LUYỆN TẬP CÂU", color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        Text(text = currentLesson.word.uppercase(), fontSize = if (currentLesson.word.length > 8) 28.sp else 36.sp, fontWeight = FontWeight.Black, color = Color(0xFF1E3A8A))
-                    }
+                        Text(
+                            text = currentLesson.word.uppercase(),
+                            fontSize = if (currentLesson.word.length > 8) 28.sp else 36.sp,
+                            lineHeight = if (currentLesson.word.length > 8) 34.sp else 44.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFF1E3A8A)
+                        )                    }
                     Surface(modifier = Modifier.size(56.dp), shape = CircleShape, color = Color(0xFFDBEAFE)) {
-                        IconButton(onClick = { playSoundInternal("sound${currentLesson.id}_2") }) {
+                        IconButton(onClick = {
+                            val soundName = if (type == "sentence") "sound${currentLesson.id}" else "sound${currentLesson.id}_2"
+                            playSoundInternal(soundName)
+                        }) {
                             Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = null, tint = Color(0xFF2563EB), modifier = Modifier.size(28.dp))
                         }
                     }

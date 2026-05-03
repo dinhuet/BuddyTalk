@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.media.MediaPlayer
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,8 +32,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -56,21 +60,6 @@ fun PracticePronunciationScreen(
     val coroutineScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
 
-    // Status mapping based on Vosk state
-    val feedbackText = when {
-        !uiState.isModelLoaded -> "ĐANG TẢI DỮ LIỆU..."
-        uiState.isListening -> if (uiState.partialText.isEmpty()) "CON NÓI ĐI, BÉ ĐANG NGHE..." else uiState.partialText.uppercase()
-        uiState.recognizedText.isNotEmpty() -> uiState.recognizedText.uppercase()
-        else -> "ĐANG CHỜ BÉ..."
-    }
-
-    val feedbackColor = when {
-        !uiState.isModelLoaded -> Color.Gray
-        uiState.isListening -> Color(0xFF2563EB)
-        uiState.recognizedText.isNotEmpty() -> if (uiState.isCorrect) Color(0xFF00C853) else Color.Red
-        else -> Color(0xFFBFDBFE)
-    }
-
     // Function to play sound
     fun playSoundInternal(soundName: String, onComplete: () -> Unit = {}) {
         mediaPlayer?.stop()
@@ -87,6 +76,33 @@ fun PracticePronunciationScreen(
                 start()
             }
         }
+    }
+
+    // Show toast message when error occurs (e.g., not completed all sentences)
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            // Play doprevious sound when the "complete all" error appears
+            if (message == "Bé hãy hoàn thành các câu trước nhé!") {
+                playSoundInternal("doprevious")
+            }
+            viewModel.clearError()
+        }
+    }
+
+    // Status mapping based on Vosk state
+    val feedbackText = when {
+        !uiState.isModelLoaded -> "ĐANG TẢI DỮ LIỆU..."
+        uiState.isListening -> if (uiState.partialText.isEmpty()) "CON NÓI ĐI, BÉ ĐANG NGHE..." else uiState.partialText.uppercase()
+        uiState.recognizedText.isNotEmpty() -> uiState.recognizedText.uppercase()
+        else -> "ĐANG CHỜ BÉ..."
+    }
+
+    val feedbackColor = when {
+        !uiState.isModelLoaded -> Color.Gray
+        uiState.isListening -> Color(0xFF2563EB)
+        uiState.recognizedText.isNotEmpty() -> if (uiState.isCorrect) Color(0xFF00C853) else Color.Red
+        else -> Color(0xFFBFDBFE)
     }
 
     // Load lessons
@@ -204,13 +220,25 @@ fun PracticePronunciationScreen(
             Surface(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).height(120.dp), shape = RoundedCornerShape(32.dp), color = Color.White, shadowElevation = 2.dp, border = BorderStroke(1.dp, Color(0xFFE5E7EB))) {
                 Row(modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                     Column(modifier = Modifier.weight(1f)) {
+                        val annotatedWord = buildAnnotatedString {
+                            val words = currentLesson.word.split(Regex("\\s+"))
+                            words.forEachIndexed { index, word ->
+                                val isWrong = uiState.mispronouncedIndices.contains(index)
+                                withStyle(style = SpanStyle(
+                                    color = if (isWrong) Color.Red else Color(0xFF1E3A8A)
+                                )) {
+                                    append(word.uppercase())
+                                }
+                                if (index < words.size - 1) append(" ")
+                            }
+                        }
                         Text(
-                            text = currentLesson.word.uppercase(),
+                            text = annotatedWord,
                             fontSize = if (currentLesson.word.length > 8) 28.sp else 36.sp,
                             lineHeight = if (currentLesson.word.length > 8) 34.sp else 44.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color(0xFF1E3A8A)
-                        )                    }
+                            fontWeight = FontWeight.Black
+                        )
+                    }
                     Surface(modifier = Modifier.size(56.dp), shape = CircleShape, color = Color(0xFFDBEAFE)) {
                         IconButton(onClick = {
                             val soundName = if (type == "sentence") "sound${currentLesson.id}" else "sound${currentLesson.id}_2"

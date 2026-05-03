@@ -8,6 +8,7 @@ import com.example.buddytalk.data.entity.Lesson
 import com.example.buddytalk.data.entity.Topic
 import com.example.buddytalk.data.repository.LessonRepository
 import com.example.buddytalk.data.repository.TopicRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -39,29 +40,51 @@ class TopicViewModel(application: Application) : AndroidViewModel(application) {
         topicRepository = TopicRepository(database.topicDao())
         lessonRepository = LessonRepository(database.lessonDao())
 
-        viewModelScope.launch {
-            combine(
-                topicRepository.allTopics,
-                _searchQuery
-            ) { topics, query ->
-                if (topics.isEmpty()) {
-                    seedDatabase()
-                    emptyList<TopicUiState>()
-                } else {
-                    val filtered = topics.filter { it.name.contains(query, ignoreCase = true) }
-                    filtered.map { topic ->
-                        val count = 10 + (topic.id.toInt() % 10)
-                        TopicUiState(
-                            topic = topic,
-                            lessonCount = count,
-                            isCompleted = topic.id == 1L
-                        )
+        observeTopics()
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun observeTopics() {
+        // Kết hợp chế độ học, tìm kiếm và danh sách topic để tính toán số câu chính xác
+        _learningMode
+            .flatMapLatest { mode ->
+                val targetType = when (mode) {
+                    LearningMode.IMAGE -> 0
+                    LearningMode.TEXT -> 1
+                    LearningMode.SENTENCE -> 3
+                    LearningMode.VOCABULARY -> 1
+                }
+                
+                combine(
+                    topicRepository.allTopics,
+                    _searchQuery
+                ) { topics, query ->
+                    if (topics.isEmpty()) {
+                        seedDatabase()
+                        emptyList<Topic>()
+                    } else {
+                        topics.filter { it.name.contains(query, ignoreCase = true) }
+                    }
+                }.flatMapLatest { filteredTopics ->
+                    if (filteredTopics.isEmpty()) {
+                        flowOf(emptyList<TopicUiState>())
+                    } else {
+                        // Với mỗi topic, ta quan sát Flow danh sách bài học để đếm số câu theo mode
+                        val topicUiStateFlows = filteredTopics.map { topic ->
+                            lessonRepository.getLessonsByTopicId(topic.id).map { lessons ->
+                                TopicUiState(
+                                    topic = topic,
+                                    lessonCount = lessons.count { it.isWordLesson == targetType },
+                                    isCompleted = false // Có thể thêm logic kiểm tra hoàn thành ở đây
+                                )
+                            }
+                        }
+                        combine(topicUiStateFlows) { it.toList() }
                     }
                 }
-            }.collect {
-                _topicsWithCount.value = it
             }
-        }
+            .onEach { _topicsWithCount.value = it }
+            .launchIn(viewModelScope)
     }
 
     private suspend fun seedDatabase() {
@@ -72,9 +95,6 @@ class TopicViewModel(application: Application) : AndroidViewModel(application) {
             Topic(name = "Thức ăn", isLocked = true),
             Topic(name = "Quần áo", isLocked = true)
         )
-
-        val normalLessons = mutableListOf<Lesson>()
-        val sentenceLessons = mutableListOf<Lesson>()
 
         topics.forEach { topic ->
             val topicId = topicRepository.insertTopic(topic)
@@ -154,19 +174,9 @@ class TopicViewModel(application: Application) : AndroidViewModel(application) {
             }
 
             lessons.forEach { lesson ->
-                if (lesson.isWordLesson == 3) {
-                    sentenceLessons.add(lesson)
-                } else {
-                    normalLessons.add(lesson)
-                }
+                lessonRepository.insertLesson(lesson)
             }
         }
-
-        // Insert all normal lessons (isWordLesson 0 and 1) first
-        normalLessons.forEach { lessonRepository.insertLesson(it) }
-        
-        // Insert all sentence lessons (isWordLesson 3) last
-        sentenceLessons.forEach { lessonRepository.insertLesson(it) }
     }
 
     fun onSearchQueryChange(query: String) {

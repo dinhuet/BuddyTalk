@@ -114,7 +114,11 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
             lessonRepository.getLessonsByTopicId(topicId)
                 .map { allLessons ->
                     allLessons.filter { lesson ->
-                        if (mode == "TEXT") lesson.isWordLesson else !lesson.isWordLesson
+                        when (mode) {
+                            "TEXT" -> lesson.isWordLesson == 1
+                            "SENTENCE" -> lesson.isWordLesson == 3
+                            else -> lesson.isWordLesson == 0
+                        }
                     }
                 }
                 .collect { filteredLessons ->

@@ -16,6 +16,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.buddytalk.ui.screen.ProfileScreen
 import com.example.buddytalk.ui.screen.PracticePronunciationScreen
 import com.example.buddytalk.ui.screen.LessonScreen
+import com.example.buddytalk.ui.screen.AnalyticsScreen
 
 @Composable
 fun AppNavGraph(
@@ -30,6 +31,9 @@ fun AppNavGraph(
     ) {
         composable(Routes.Home.route) {
             HomeScreen(navController = navController)
+        }
+        composable(Routes.Analytics.route) {
+            AnalyticsScreen(navController = navController)
         }
         composable(Routes.Profile.route) {
             ProfileScreen(

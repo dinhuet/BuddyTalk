@@ -4,6 +4,7 @@ sealed class Routes(val route: String) {
     object Splash : Routes("splash")
     object Home : Routes("home")
     object Settings : Routes("settings")
+    object Analytics : Routes("analytics")
     object Topics : Routes("topics/{mode}") {
         fun createRoute(mode: String) = "topics/$mode"
     }

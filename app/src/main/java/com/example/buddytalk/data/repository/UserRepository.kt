@@ -18,4 +18,8 @@ class UserRepository(private val userDao: UserDao) {
     suspend fun updateAvatar(newUrl: String, currentUser: UserEntity) {
         userDao.insertUser(currentUser.copy(avatarUrl = newUrl))
     }
+
+    suspend fun updateStreak(currentUser: UserEntity, newStreak: Int, lastStudyDate: Long) {
+        userDao.insertUser(currentUser.copy(streak = newStreak, lastStudyDate = lastStudyDate))
+    }
 }

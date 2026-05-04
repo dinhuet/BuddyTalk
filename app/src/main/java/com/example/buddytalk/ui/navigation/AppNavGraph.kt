@@ -1,6 +1,6 @@
 package com.example.buddytalk.ui.navigation
 
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -17,6 +17,7 @@ import com.example.buddytalk.ui.screen.ProfileScreen
 import com.example.buddytalk.ui.screen.PracticePronunciationScreen
 import com.example.buddytalk.ui.screen.LessonScreen
 import com.example.buddytalk.ui.screen.AnalyticsScreen
+import com.example.buddytalk.ui.component.StreakDialog
 
 @Composable
 fun AppNavGraph(
@@ -24,6 +25,23 @@ fun AppNavGraph(
     userViewModel: UserViewModel,
     modifier: Modifier = Modifier
 ) {
+    var showStreakDialog by remember { mutableStateOf(false) }
+    var currentStreak by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(Unit) {
+        userViewModel.streakUpdatedEvent.collect { streak ->
+            currentStreak = streak
+            showStreakDialog = true
+        }
+    }
+
+    if (showStreakDialog) {
+        StreakDialog(
+            streakCount = currentStreak,
+            onDismiss = { showStreakDialog = false }
+        )
+    }
+
     NavHost(
         navController = navController,
         startDestination = Routes.Home.route,
@@ -80,7 +98,8 @@ fun AppNavGraph(
             LessonScreen(
                 navController = navController,
                 topicId = topicId,
-                mode = mode
+                mode = mode,
+                onLessonComplete = { userViewModel.completeLesson() }
             )
         }
 
@@ -96,7 +115,8 @@ fun AppNavGraph(
             PracticePronunciationScreen(
                 navController = navController,
                 topicId = topicId,
-                type = type
+                type = type,
+                onLessonComplete = { userViewModel.completeLesson() }
             )
         }
         

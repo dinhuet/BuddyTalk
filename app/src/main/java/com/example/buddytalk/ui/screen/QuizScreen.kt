@@ -20,7 +20,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -466,23 +468,59 @@ private fun QuizWordOption(
 
 @Composable
 private fun ResultOverlay(isSuccess: Boolean) {
+    val accent = if (isSuccess) Color(0xFF22C55E) else Color(0xFFEF4444)
+    val soft = if (isSuccess) Color(0xFFECFDF3) else Color(0xFFFFF1F2)
+    val title = if (isSuccess) "Chính xác" else "Chưa đúng"
+    val subtitle = if (isSuccess) "Bé làm rất tốt!" else "Thử lại nhé!"
+    val icon = if (isSuccess) Icons.Default.CheckCircle else Icons.Default.ErrorOutline
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.25f)),
+            .background(Color.Black.copy(alpha = 0.22f)),
         contentAlignment = Alignment.Center
     ) {
         Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = if (isSuccess) Color(0xFF22C55E) else Color(0xFFEF4444)
+            shape = RoundedCornerShape(28.dp),
+            color = Color.White,
+            shadowElevation = 10.dp,
+            border = BorderStroke(1.dp, accent.copy(alpha = 0.25f))
         ) {
-            Text(
-                text = if (isSuccess) "Chính xác" else "Chưa đúng",
-                color = Color.White,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 32.dp, vertical = 20.dp)
-            )
+            Column(
+                modifier = Modifier.padding(horizontal = 28.dp, vertical = 22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = soft
+                ) {
+                    Box(
+                        modifier = Modifier.size(64.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = accent,
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(14.dp))
+                Text(
+                    text = title,
+                    color = Color(0xFF111827),
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Black
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = subtitle,
+                    color = Color(0xFF6B7280),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
         }
     }
 }

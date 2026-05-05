@@ -17,6 +17,8 @@ import com.example.buddytalk.ui.screen.ProfileScreen
 import com.example.buddytalk.ui.screen.PracticePronunciationScreen
 import com.example.buddytalk.ui.screen.LessonScreen
 import com.example.buddytalk.ui.screen.AnalyticsScreen
+import com.example.buddytalk.ui.screen.QuizMenuScreen
+import com.example.buddytalk.ui.screen.QuizScreen
 import com.example.buddytalk.ui.component.StreakDialog
 
 @Composable
@@ -50,6 +52,9 @@ fun AppNavGraph(
         composable(Routes.Home.route) {
             HomeScreen(navController = navController)
         }
+        composable(Routes.QuizMenu.route) {
+            QuizMenuScreen(navController = navController)
+        }
         composable(Routes.Analytics.route) {
             AnalyticsScreen(navController = navController)
         }
@@ -69,18 +74,33 @@ fun AppNavGraph(
         }
         composable(
             Routes.Topics.route,
-            arguments = listOf(navArgument("mode") { type = NavType.StringType })
+            arguments = listOf(
+                navArgument("mode") { type = NavType.StringType },
+                navArgument("quizType") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                    nullable = true
+                }
+            )
         ) { backStackEntry ->
             val mode = backStackEntry.arguments?.getString("mode") ?: "learn"
+            val quizType = backStackEntry.arguments?.getString("quizType")?.takeIf { it.isNotBlank() }
             val topicViewModel: TopicViewModel = viewModel()
             TopicScreen(
                 viewModel = topicViewModel,
                 mode = mode,
+                quizType = quizType,
                 onTopicClick = { topicId, learningMode ->
-                    if (mode == "practice") {
-                        navController.navigate(Routes.PracticePronunciation.createRoute(topicId, learningMode.lowercase()))
-                    } else {
-                        navController.navigate(Routes.Lesson.createRoute(topicId, learningMode))
+                    when (mode) {
+                        "practice" -> {
+                            navController.navigate(Routes.PracticePronunciation.createRoute(topicId, learningMode.lowercase()))
+                        }
+                        "quiz" -> {
+                            navController.navigate(Routes.Quiz.createRoute(topicId, learningMode.lowercase()))
+                        }
+                        else -> {
+                            navController.navigate(Routes.Lesson.createRoute(topicId, learningMode))
+                        }
                     }
                 }
             )
@@ -117,6 +137,23 @@ fun AppNavGraph(
                 topicId = topicId,
                 type = type,
                 onLessonComplete = { userViewModel.completeLesson() }
+            )
+        }
+
+        composable(
+            Routes.Quiz.route,
+            arguments = listOf(
+                navArgument("topicId") { type = NavType.LongType },
+                navArgument("type") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val topicId = backStackEntry.arguments?.getLong("topicId") ?: 0L
+            val type = backStackEntry.arguments?.getString("type") ?: "quiz_match_image"
+            QuizScreen(
+                navController = navController,
+                topicId = topicId,
+                type = type,
+                onQuizComplete = { userViewModel.completeLesson() }
             )
         }
         

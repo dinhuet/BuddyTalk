@@ -31,16 +31,37 @@ import com.example.buddytalk.data.viewModel.TopicUiState
 fun TopicScreen(
     viewModel: TopicViewModel = viewModel(),
     mode: String = "learn",
+    quizType: String? = null,
     onTopicClick: (Long, String) -> Unit = { _, _ -> }
 ) {
     val topics by viewModel.topicsWithCount.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val learningMode by viewModel.learningMode.collectAsState()
+    val headerTitle = when (mode) {
+        "practice" -> "Chủ đề luyện tập"
+        "quiz" -> "Chủ đề trắc nghiệm"
+        else -> "Chủ đề học"
+    }
 
     // Cập nhật mặc định cho mode practice nếu chưa được set
-    LaunchedEffect(mode) {
-        if (mode == "practice" && learningMode != LearningMode.SENTENCE && learningMode != LearningMode.VOCABULARY) {
-            viewModel.onLearningModeChange(LearningMode.SENTENCE)
+    LaunchedEffect(mode, quizType) {
+        when (mode) {
+            "practice" -> {
+                if (learningMode != LearningMode.SENTENCE && learningMode != LearningMode.VOCABULARY) {
+                    viewModel.onLearningModeChange(LearningMode.SENTENCE)
+                }
+            }
+            "quiz" -> {
+                val mappedMode = mapQuizTypeToLearningMode(quizType)
+                if (learningMode != mappedMode) {
+                    viewModel.onLearningModeChange(mappedMode)
+                }
+            }
+            else -> {
+                if (learningMode != LearningMode.IMAGE && learningMode != LearningMode.TEXT) {
+                    viewModel.onLearningModeChange(LearningMode.IMAGE)
+                }
+            }
         }
     }
 
@@ -49,7 +70,7 @@ fun TopicScreen(
             .fillMaxSize()
             .background(Color(0xFFF5F9FF))
     ) {
-        HeaderSection(searchQuery, viewModel::onSearchQueryChange)
+        HeaderSection(headerTitle, searchQuery, viewModel::onSearchQueryChange)
 
         Column(
             modifier = Modifier
@@ -58,63 +79,92 @@ fun TopicScreen(
         ) {
             Spacer(modifier = Modifier.height(24.dp))
             
-            if (mode == "practice") {
-                Text(
-                    text = "Luyện tập theo",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF333333)
-                )
-                
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    LearningModeItem(
-                        title = "Cả câu",
-                        icon = Icons.Default.FormatQuote,
-                        isSelected = learningMode == LearningMode.SENTENCE,
-                        modifier = Modifier.weight(1f),
-                        onClick = { viewModel.onLearningModeChange(LearningMode.SENTENCE) }
+            when (mode) {
+                "practice" -> {
+                    Text(
+                        text = "Luyện tập theo",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF333333)
                     )
-                    LearningModeItem(
-                        title = "Từ vựng",
-                        icon = Icons.Default.Abc,
-                        isSelected = learningMode == LearningMode.VOCABULARY,
-                        modifier = Modifier.weight(1f),
-                        onClick = { viewModel.onLearningModeChange(LearningMode.VOCABULARY) }
-                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        LearningModeItem(
+                            title = "Cả câu",
+                            icon = Icons.Default.FormatQuote,
+                            isSelected = learningMode == LearningMode.SENTENCE,
+                            modifier = Modifier.weight(1f),
+                            onClick = { viewModel.onLearningModeChange(LearningMode.SENTENCE) }
+                        )
+                        LearningModeItem(
+                            title = "Từ vựng",
+                            icon = Icons.Default.Abc,
+                            isSelected = learningMode == LearningMode.VOCABULARY,
+                            modifier = Modifier.weight(1f),
+                            onClick = { viewModel.onLearningModeChange(LearningMode.VOCABULARY) }
+                        )
+                    }
                 }
-            } else {
-                Text(
-                    text = "Chế độ học",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF333333)
-                )
-                
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    LearningModeItem(
-                        title = "Hình ảnh",
-                        icon = Icons.Default.Image,
-                        isSelected = learningMode == LearningMode.IMAGE,
-                        modifier = Modifier.weight(1f),
-                        onClick = { viewModel.onLearningModeChange(LearningMode.IMAGE) }
+                "quiz" -> {
+                    val quizLabel = quizTypeLabel(quizType)
+                    Text(
+                        text = "Trắc nghiệm",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF333333)
                     )
-                    LearningModeItem(
-                        title = "Từ / Câu",
-                        icon = Icons.Default.TextFields,
-                        isSelected = learningMode == LearningMode.TEXT,
-                        modifier = Modifier.weight(1f),
-                        onClick = { viewModel.onLearningModeChange(LearningMode.TEXT) }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color.White,
+                        border = BorderStroke(1.dp, Color(0xFFE5E7EB))
+                    ) {
+                        Text(
+                            text = quizLabel,
+                            modifier = Modifier.padding(16.dp),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF2563EB)
+                        )
+                    }
+                }
+                else -> {
+                    Text(
+                        text = "Chế độ học",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF333333)
                     )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        LearningModeItem(
+                            title = "Hình ảnh",
+                            icon = Icons.Default.Image,
+                            isSelected = learningMode == LearningMode.IMAGE,
+                            modifier = Modifier.weight(1f),
+                            onClick = { viewModel.onLearningModeChange(LearningMode.IMAGE) }
+                        )
+                        LearningModeItem(
+                            title = "Từ / Câu",
+                            icon = Icons.Default.TextFields,
+                            isSelected = learningMode == LearningMode.TEXT,
+                            modifier = Modifier.weight(1f),
+                            onClick = { viewModel.onLearningModeChange(LearningMode.TEXT) }
+                        )
+                    }
                 }
             }
 
@@ -152,6 +202,7 @@ fun TopicScreen(
 
 @Composable
 fun HeaderSection(
+    title: String,
     searchQuery: String,
     onSearchChange: (String) -> Unit
 ) {
@@ -173,7 +224,7 @@ fun HeaderSection(
         ) {
             Spacer(modifier = Modifier.height(20.dp))
             Text(
-                text = "Chủ đề học",
+                text = title,
                 color = Color.White,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold
@@ -313,5 +364,21 @@ fun TopicItem(
                 )
             }
         }
+    }
+}
+
+private fun mapQuizTypeToLearningMode(quizType: String?): LearningMode {
+    return when (quizType?.lowercase()) {
+        "quiz_audio_word", "audio_word" -> LearningMode.QUIZ_AUDIO_WORD
+        "quiz_audio_image", "audio_image" -> LearningMode.QUIZ_AUDIO_IMAGE
+        else -> LearningMode.QUIZ_MATCH_IMAGE
+    }
+}
+
+private fun quizTypeLabel(quizType: String?): String {
+    return when (quizType?.lowercase()) {
+        "quiz_audio_word", "audio_word" -> "Nghe audio -> Chọn từ ngữ"
+        "quiz_audio_image", "audio_image" -> "Nghe audio -> Chọn hình ảnh"
+        else -> "Ghép từ ngữ và hình ảnh"
     }
 }

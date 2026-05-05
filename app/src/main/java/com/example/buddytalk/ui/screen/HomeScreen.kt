@@ -141,6 +141,16 @@ fun HomeScreen(
         )
         
         Spacer(modifier = Modifier.height(16.dp))
+
+        ActionCard(
+            title = "Trắc nghiệm",
+            subtitle = "GHÉP - NGHE - CHỌN",
+            icon = "🧩",
+            color = Color(0xFFF59E0B),
+            onClick = { navController.navigate(Routes.QuizMenu.route) }
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
         
         ActionCard(
             title = "Thống kê",

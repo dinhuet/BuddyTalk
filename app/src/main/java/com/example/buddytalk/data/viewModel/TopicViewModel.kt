@@ -13,7 +13,13 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 enum class LearningMode {
-    IMAGE, TEXT, SENTENCE, VOCABULARY
+    IMAGE,
+    TEXT,
+    SENTENCE,
+    VOCABULARY,
+    QUIZ_MATCH_IMAGE,
+    QUIZ_AUDIO_WORD,
+    QUIZ_AUDIO_IMAGE
 }
 
 data class TopicUiState(
@@ -53,6 +59,9 @@ class TopicViewModel(application: Application) : AndroidViewModel(application) {
                     LearningMode.TEXT -> 1
                     LearningMode.SENTENCE -> 3
                     LearningMode.VOCABULARY -> 1
+                    LearningMode.QUIZ_MATCH_IMAGE -> 0
+                    LearningMode.QUIZ_AUDIO_WORD -> 1
+                    LearningMode.QUIZ_AUDIO_IMAGE -> 0
                 }
                 
                 combine(

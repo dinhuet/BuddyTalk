@@ -10,13 +10,11 @@ import androidx.activity.viewModels
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.navigation.compose.rememberNavController
 import com.example.buddytalk.data.viewModel.UserViewModel
-import com.example.buddytalk.ui.component.BottomNavigationBar
 import com.example.buddytalk.ui.navigation.AppNavGraph
 import com.example.buddytalk.ui.theme.BuddyTalkTheme
 
@@ -47,8 +45,7 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
-                    containerColor = Color.White,
-                    bottomBar = { BottomNavigationBar(navController = navController) }
+                    containerColor = Color.White
                 ) { innerPadding ->
                     AppNavGraph(
                         navController = navController,

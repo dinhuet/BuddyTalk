@@ -34,7 +34,8 @@ fun LessonScreen(
     navController: androidx.navigation.NavController,
     topicId: Long,
     mode: String,
-    viewModel: LessonViewModel = viewModel()
+    viewModel: LessonViewModel = viewModel(),
+    onLessonComplete: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
@@ -88,6 +89,13 @@ fun LessonScreen(
                 // Thẻ hình ảnh: sound{lessonId}.mp3
                 playSoundInternal("sound${lesson.id}")
             }
+        }
+    }
+
+    // Streak update when finished
+    LaunchedEffect(uiState.isFinished) {
+        if (uiState.isFinished) {
+            onLessonComplete()
         }
     }
 

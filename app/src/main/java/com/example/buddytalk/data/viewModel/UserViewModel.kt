@@ -8,13 +8,17 @@ import com.example.buddytalk.data.database.AppDatabase
 import com.example.buddytalk.data.entity.UserEntity
 import com.example.buddytalk.data.repository.UserRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.util.Calendar
 
 class UserViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: UserRepository
@@ -22,6 +26,9 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _user = MutableStateFlow<UserEntity?>(null)
     val user: StateFlow<UserEntity?> = _user.asStateFlow()
+
+    private val _streakUpdatedEvent = MutableSharedFlow<Int>()
+    val streakUpdatedEvent: SharedFlow<Int> = _streakUpdatedEvent.asSharedFlow()
 
     init {
         val userDao = AppDatabase.getDatabase(application).userDao()
@@ -32,9 +39,10 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                 if (it == null) {
                     val defaultUser = UserEntity(
                         userName = "Anonymous",
-                        level = 19,
-                        rank = "Hạng VI",
-                        streak = 17,
+                        level = 1,
+                        rank = "Hạng I",
+                        streak = 0,
+                        lastStudyDate = null,
                         avatarUrl = null
                     )
                     repository.insertUser(defaultUser)
@@ -43,6 +51,56 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+    }
+
+    fun completeLesson() {
+        viewModelScope.launch {
+            val currentUser = _user.value ?: return@launch
+            val now = System.currentTimeMillis()
+            val lastStudy = currentUser.lastStudyDate
+
+            if (lastStudy == null) {
+                // First time ever
+                updateStreak(currentUser, 1, now)
+                _streakUpdatedEvent.emit(1)
+            } else {
+                val lastCalendar = Calendar.getInstance().apply { timeInMillis = lastStudy }
+                val nowCalendar = Calendar.getInstance().apply { timeInMillis = now }
+
+                if (isSameDay(lastCalendar, nowCalendar)) {
+                    // Already studied today, do nothing for streak count
+                    return@launch
+                }
+
+                if (isYesterday(lastCalendar, nowCalendar)) {
+                    // Consecutive day
+                    val newStreak = currentUser.streak + 1
+                    updateStreak(currentUser, newStreak, now)
+                    _streakUpdatedEvent.emit(newStreak)
+                } else {
+                    // Gap in studying, reset to 1
+                    updateStreak(currentUser, 1, now)
+                    _streakUpdatedEvent.emit(1)
+                }
+            }
+        }
+    }
+
+    private suspend fun updateStreak(user: UserEntity, newStreak: Int, timestamp: Long) {
+        repository.updateStreak(user, newStreak, timestamp)
+    }
+
+    private fun isSameDay(cal1: Calendar, cal2: Calendar): Boolean {
+        return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
+                cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
+    }
+
+    private fun isYesterday(last: Calendar, now: Calendar): Boolean {
+        val yesterday = Calendar.getInstance().apply {
+            timeInMillis = now.timeInMillis
+            add(Calendar.DAY_OF_YEAR, -1)
+        }
+        return isSameDay(last, yesterday)
     }
 
     fun updateUserName(newName: String) {
@@ -78,7 +136,6 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
                 
-                // Trả về đường dẫn tuyệt đối của file trong máy
                 file.absolutePath
             } catch (e: Exception) {
                 e.printStackTrace()

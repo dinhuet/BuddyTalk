@@ -24,5 +24,5 @@ data class Lesson(
     val ref: Long,
     val letter: String,
     val word: String,
-    val isWordLesson: Boolean = false
+    val isWordLesson: Int = 1
 )

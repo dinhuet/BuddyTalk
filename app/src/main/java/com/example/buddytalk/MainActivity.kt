@@ -1,11 +1,13 @@
 package com.example.buddytalk
 
+import android.Manifest
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -21,11 +23,18 @@ import com.example.buddytalk.ui.theme.BuddyTalkTheme
 class MainActivity : ComponentActivity() {
     private val userViewModel: UserViewModel by viewModels()
 
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        // Xử lý nếu cần
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Cấu hình Edge-to-Edge để thanh trạng thái hiển thị icon tối trên nền sáng
-        // và thanh điều hướng hệ thống trong suốt cho BottomBar custom
+        // Yêu cầu quyền ghi âm
+        requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.light(
                 android.graphics.Color.TRANSPARENT,
@@ -46,6 +55,7 @@ class MainActivity : ComponentActivity() {
                         userViewModel = userViewModel,
                         modifier = Modifier
                             .padding(innerPadding)
+                            .statusBarsPadding()
                     )
                 }
             }

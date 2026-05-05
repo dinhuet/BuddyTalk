@@ -147,7 +147,7 @@ fun HomeScreen(
             subtitle = "TIẾN ĐỘ CỦA BẠN",
             icon = "📊",
             color = Color(0xFF10B981),
-            onClick = { /* Not routed yet */ }
+            onClick = { navController.navigate(Routes.Analytics.route) }
         )
 
         Spacer(modifier = Modifier.height(32.dp))

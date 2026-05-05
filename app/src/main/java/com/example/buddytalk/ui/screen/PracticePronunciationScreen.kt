@@ -52,7 +52,8 @@ fun PracticePronunciationScreen(
     navController: NavController,
     topicId: Long,
     type: String, // "sentence" or "vocabulary"
-    viewModel: LessonViewModel = viewModel()
+    viewModel: LessonViewModel = viewModel(),
+    onLessonComplete: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
@@ -118,6 +119,13 @@ fun PracticePronunciationScreen(
             if (uiState.lessons.isNotEmpty()) {
                 coroutineScope.launch { listState.animateScrollToItem(uiState.currentIndex) }
             }
+        }
+    }
+
+    // Streak update when finished
+    LaunchedEffect(uiState.isFinished) {
+        if (uiState.isFinished) {
+            onLessonComplete()
         }
     }
 

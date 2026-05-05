@@ -96,6 +96,9 @@ class TopicViewModel(application: Application) : AndroidViewModel(application) {
             Topic(name = "Quần áo", isLocked = true)
         )
 
+        val normalLessons = mutableListOf<Lesson>()
+        val sentenceLessons = mutableListOf<Lesson>()
+
         topics.forEach { topic ->
             val topicId = topicRepository.insertTopic(topic)
 
@@ -174,9 +177,20 @@ class TopicViewModel(application: Application) : AndroidViewModel(application) {
             }
 
             lessons.forEach { lesson ->
-                lessonRepository.insertLesson(lesson)
+                if (lesson.isWordLesson == 3) {
+                    sentenceLessons.add(lesson)
+                } else {
+                    normalLessons.add(lesson)
+                }
             }
+
+
         }
+
+        normalLessons.forEach { lessonRepository.insertLesson(it) }
+
+        // Insert all sentence lessons (isWordLesson 3) last
+        sentenceLessons.forEach { lessonRepository.insertLesson(it) }
     }
 
     fun onSearchQueryChange(query: String) {

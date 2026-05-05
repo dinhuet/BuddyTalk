@@ -9,6 +9,9 @@ interface LessonDao {
     @Query("SELECT * FROM lessons WHERE ref = :topicId")
     fun getLessonsByTopicId(topicId: Long): Flow<List<Lesson>>
 
+    @Query("SELECT COUNT(*) FROM lessons WHERE ref = :topicId AND isWordLesson = :type")
+    suspend fun getLessonCountByType(topicId: Long, type: Int): Int
+
     @Query("SELECT * FROM lessons WHERE id = :id")
     suspend fun getLessonById(id: Long): Lesson?
 

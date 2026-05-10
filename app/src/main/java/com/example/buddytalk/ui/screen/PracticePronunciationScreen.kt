@@ -5,6 +5,11 @@ import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.media.MediaPlayer
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -261,36 +266,169 @@ fun PracticePronunciationScreen(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Mic Section with PointerInput (Hold to Talk)
-        Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.pointerInput(uiState.isModelLoaded) {
-                    if (!uiState.isModelLoaded) return@pointerInput
-                    detectTapGestures(
-                        onPress = {
-                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                                try {
-                                    viewModel.startListening()
-                                    awaitRelease()
-                                } finally {
-                                    viewModel.stopListening()
-                                }
-                            } else {
-                                // Request permission or show error
-                            }
-                        }
-                    )
-                }
+        // Mẹo Kiki condition
+        val showTip = !uiState.isCorrect && uiState.recognizedText.isNotEmpty() && !uiState.isListening && (currentLesson?.tip?.isNotEmpty() == true)
+
+        // Mic Section with Tip Card
+        if (type == "vocabulary") {
+            // Vocabulary mode: Mic bên trái, Mẹo bên phải
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
-                Surface(modifier = Modifier.size(160.dp), shape = CircleShape, color = if (uiState.isListening) Color(0xFF2563EB).copy(alpha = 0.2f) else Color(0xFFDBEAFE).copy(alpha = 0.5f)) {}
-                Surface(modifier = Modifier.size(120.dp), shape = CircleShape, color = if (!uiState.isModelLoaded) Color.Gray else if (uiState.isListening) Color(0xFF00C853) else Color(0xFF2563EB), shadowElevation = 8.dp) {
-                    Icon(Icons.Default.Mic, contentDescription = null, tint = Color.White, modifier = Modifier.padding(32.dp).size(48.dp))
+                // Mic Button
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.pointerInput(uiState.isModelLoaded) {
+                            if (!uiState.isModelLoaded) return@pointerInput
+                            detectTapGestures(
+                                onPress = {
+                                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                                        try {
+                                            viewModel.startListening()
+                                            awaitRelease()
+                                        } finally {
+                                            viewModel.stopListening()
+                                        }
+                                    } else {
+                                        // Request permission or show error
+                                    }
+                                }
+                            )
+                        }
+                    ) {
+                        Surface(modifier = Modifier.size(160.dp), shape = CircleShape, color = if (uiState.isListening) Color(0xFF2563EB).copy(alpha = 0.2f) else Color(0xFFDBEAFE).copy(alpha = 0.5f)) {}
+                        Surface(modifier = Modifier.size(120.dp), shape = CircleShape, color = if (!uiState.isModelLoaded) Color.Gray else if (uiState.isListening) Color(0xFF00C853) else Color(0xFF2563EB), shadowElevation = 8.dp) {
+                            Icon(Icons.Default.Mic, contentDescription = null, tint = Color.White, modifier = Modifier.padding(32.dp).size(48.dp))
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(text = if (uiState.isModelLoaded) "NHẤN & GIỮ" else "ĐANG TẢI...", fontSize = 16.sp, fontWeight = FontWeight.Black, color = Color(0xFF1E3A8A))
+                }
+
+                // Mẹo Kiki Tip Card bên phải mic
+                AnimatedVisibility(
+                    visible = showTip,
+                    enter = fadeIn() + scaleIn(initialScale = 0.8f),
+                    exit = fadeOut() + scaleOut(targetScale = 0.8f)
+                ) {
+                    Surface(
+                        modifier = Modifier
+                            .padding(start = 12.dp)
+                            .widthIn(max = 160.dp),
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color(0xFFF0F4FF),
+                        shadowElevation = 4.dp,
+                        border = BorderStroke(1.5.dp, Color(0xFFBFDBFE))
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Mẹo Kiki",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFF1E3A8A)
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "👅",
+                                fontSize = 32.sp
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = currentLesson?.tip ?: "",
+                                fontSize = 12.sp,
+                                color = Color(0xFF374151),
+                                textAlign = TextAlign.Center,
+                                lineHeight = 16.sp
+                            )
+                        }
+                    }
                 }
             }
-            Spacer(modifier = Modifier.height(24.dp))
-            Text(text = if (uiState.isModelLoaded) "NHẤN VÀ GIỮ" else "ĐANG TẢI...", fontSize = 18.sp, fontWeight = FontWeight.Black, color = Color(0xFF1E3A8A))
-            Text(text = if (uiState.isModelLoaded) "để bắt đầu nói nhé!" else "Vui lòng chờ trong giây lát", fontSize = 14.sp, color = Color.Gray)
+        } else {
+            // Sentence mode: Mic ở trên, Mẹo ở dưới
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Mic Button
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.pointerInput(uiState.isModelLoaded) {
+                        if (!uiState.isModelLoaded) return@pointerInput
+                        detectTapGestures(
+                            onPress = {
+                                if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                                    try {
+                                        viewModel.startListening()
+                                        awaitRelease()
+                                    } finally {
+                                        viewModel.stopListening()
+                                    }
+                                } else {
+                                    // Request permission or show error
+                                }
+                            }
+                        )
+                    }
+                ) {
+                    Surface(modifier = Modifier.size(160.dp), shape = CircleShape, color = if (uiState.isListening) Color(0xFF2563EB).copy(alpha = 0.2f) else Color(0xFFDBEAFE).copy(alpha = 0.5f)) {}
+                    Surface(modifier = Modifier.size(120.dp), shape = CircleShape, color = if (!uiState.isModelLoaded) Color.Gray else if (uiState.isListening) Color(0xFF00C853) else Color(0xFF2563EB), shadowElevation = 8.dp) {
+                        Icon(Icons.Default.Mic, contentDescription = null, tint = Color.White, modifier = Modifier.padding(32.dp).size(48.dp))
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(text = if (uiState.isModelLoaded) "NHẤN & GIỮ" else "ĐANG TẢI...", fontSize = 16.sp, fontWeight = FontWeight.Black, color = Color(0xFF1E3A8A))
+
+                // Mẹo Kiki Tip Card bên dưới mic (cho câu dài)
+                AnimatedVisibility(
+                    visible = showTip,
+                    enter = fadeIn() + scaleIn(initialScale = 0.8f),
+                    exit = fadeOut() + scaleOut(targetScale = 0.8f)
+                ) {
+                    Surface(
+                        modifier = Modifier
+                            .padding(top = 12.dp, start = 24.dp, end = 24.dp)
+                            .fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color(0xFFF0F4FF),
+                        shadowElevation = 4.dp,
+                        border = BorderStroke(1.5.dp, Color(0xFFBFDBFE))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "👅",
+                                fontSize = 28.sp
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = "Mẹo Kiki",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFF1E3A8A)
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = currentLesson?.tip ?: "",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFF374151),
+                                    lineHeight = 16.sp
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(32.dp))

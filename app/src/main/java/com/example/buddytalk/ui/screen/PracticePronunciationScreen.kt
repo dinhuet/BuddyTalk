@@ -21,6 +21,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronLeft
@@ -35,6 +37,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
@@ -157,8 +161,14 @@ fun PracticePronunciationScreen(
         Box(modifier = Modifier.fillMaxWidth().height(130.dp).clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)).background(brush = Brush.verticalGradient(colors = listOf(Color(0xFF2196F3), Color(0xFF64B5F6)))).padding(20.dp)) {
             Row(modifier = Modifier.fillMaxWidth().statusBarsPadding(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(modifier = Modifier.size(50.dp), shape = RoundedCornerShape(12.dp), color = Color.White.copy(alpha = 0.2f)) {
-                        Text("🐶", fontSize = 30.sp, modifier = Modifier.wrapContentSize())
+                    Box(
+                        modifier = Modifier
+                            .size(60.dp)
+                            .clip(CircleShape)
+                            .background(Color.White),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = "🦉", fontSize = 32.sp)
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
@@ -176,7 +186,7 @@ fun PracticePronunciationScreen(
 
         // Selector Bar
         Row(modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp, horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { coroutineScope.launch { listState.animateScrollToItem(maxOf(0, listState.firstVisibleItemIndex - 1)) } }, modifier = Modifier.size(32.dp)) {
+            IconButton(onClick = { coroutineScope.launch { listState.animateScrollToItem(maxOf(0, listState.firstVisibleItemIndex - 1)) } }, modifier = Modifier.size(32.dp).pointerHoverIcon(PointerIcon.Hand)) {
                 Icon(Icons.Default.ChevronLeft, contentDescription = null, tint = Color.Gray)
             }
             LazyRow(state = listState, modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(horizontal = 8.dp)) {
@@ -188,6 +198,7 @@ fun PracticePronunciationScreen(
                         Surface(
                             modifier = Modifier
                                 .size(36.dp)
+                                .pointerHoverIcon(PointerIcon.Hand)
                                 .clickable { viewModel.setCurrentIndex(index) },
                             shape = CircleShape,
                             color = if (isSelected) Color(0xFF2563EB) else Color(0xFFF3F4F6),
@@ -223,7 +234,7 @@ fun PracticePronunciationScreen(
                     }
                 }
             }
-            IconButton(onClick = { coroutineScope.launch { listState.animateScrollToItem(minOf(uiState.lessons.size - 1, listState.firstVisibleItemIndex + 1)) } }, modifier = Modifier.size(32.dp)) {
+            IconButton(onClick = { coroutineScope.launch { listState.animateScrollToItem(minOf(uiState.lessons.size - 1, listState.firstVisibleItemIndex + 1)) } }, modifier = Modifier.size(32.dp).pointerHoverIcon(PointerIcon.Hand)) {
                 Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.Gray)
             }
         }
@@ -252,7 +263,7 @@ fun PracticePronunciationScreen(
                             fontWeight = FontWeight.Black
                         )
                     }
-                    Surface(modifier = Modifier.size(56.dp), shape = CircleShape, color = Color(0xFFDBEAFE)) {
+                    Surface(modifier = Modifier.size(56.dp).pointerHoverIcon(PointerIcon.Hand), shape = CircleShape, color = Color(0xFFDBEAFE)) {
                         IconButton(onClick = {
                             val soundName = if (type == "sentence") "sound${currentLesson.id}" else "sound${currentLesson.id}_2"
                             playSoundInternal(soundName)
@@ -281,7 +292,7 @@ fun PracticePronunciationScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(
                         contentAlignment = Alignment.Center,
-                        modifier = Modifier.pointerInput(uiState.isModelLoaded) {
+                        modifier = Modifier.pointerHoverIcon(PointerIcon.Hand).pointerInput(uiState.isModelLoaded) {
                             if (!uiState.isModelLoaded) return@pointerInput
                             detectTapGestures(
                                 onPress = {
@@ -359,7 +370,7 @@ fun PracticePronunciationScreen(
                 // Mic Button
                 Box(
                     contentAlignment = Alignment.Center,
-                    modifier = Modifier.pointerInput(uiState.isModelLoaded) {
+                    modifier = Modifier.pointerHoverIcon(PointerIcon.Hand).pointerInput(uiState.isModelLoaded) {
                         if (!uiState.isModelLoaded) return@pointerInput
                         detectTapGestures(
                             onPress = {
@@ -500,12 +511,28 @@ fun PracticePronunciationScreen(
 
         // Nav Buttons (Quay lại / Câu tiếp giữ nguyên vị trí)
         Row(modifier = Modifier.fillMaxWidth().padding(24.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Button(onClick = { if (uiState.currentIndex > 0) viewModel.previousLesson() else navController.popBackStack() }, modifier = Modifier.weight(1f).height(56.dp), colors = ButtonDefaults.buttonColors(containerColor = Color.White), shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, Color(0xFFE5E7EB))) {
-                Text(text = if (uiState.currentIndex > 0) "QUAY LẠI" else "THOÁT", color = Color.Gray, fontWeight = FontWeight.Bold)
-            }
-            Button(onClick = { mediaPlayer?.stop(); viewModel.nextLesson() }, modifier = Modifier.weight(1f).height(56.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00C853)), shape = RoundedCornerShape(16.dp)) {
+            Button(onClick = { if (uiState.currentIndex > 0) viewModel.previousLesson() else navController.popBackStack() }, modifier = Modifier.weight(1f).height(56.dp).pointerHoverIcon(PointerIcon.Hand), colors = ButtonDefaults.buttonColors(containerColor = Color.White), shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, Color(0xFFE5E7EB))) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("CÂU TIẾP", color = Color.White, fontWeight = FontWeight.Bold); Spacer(modifier = Modifier.width(8.dp)); Text("👉", fontSize = 16.sp)
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = null,
+                        tint = Color.Gray,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = if (uiState.currentIndex > 0) "QUAY LẠI" else "THOÁT", color = Color.Gray, fontWeight = FontWeight.Bold)
+                }
+            }
+            Button(onClick = { mediaPlayer?.stop(); viewModel.nextLesson() }, modifier = Modifier.weight(1f).height(56.dp).pointerHoverIcon(PointerIcon.Hand), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00C853)), shape = RoundedCornerShape(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("CÂU TIẾP", color = Color.White, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
         }

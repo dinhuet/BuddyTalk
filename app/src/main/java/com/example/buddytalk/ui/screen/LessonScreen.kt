@@ -2,6 +2,7 @@ package com.example.buddytalk.ui.screen
 
 import android.content.Context
 import android.media.MediaPlayer
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -76,7 +77,7 @@ fun LessonScreen(
         viewModel.loadLessons(topicId, mode)
     }
 
-    // Tự động phát âm thanh khi chuyển câu
+    // Tự động phát âm thanh khi chuyển câu và đánh dấu hoàn thành
     LaunchedEffect(uiState.currentIndex, uiState.lessons) {
         val currentLesson = uiState.lessons.getOrNull(uiState.currentIndex)
         currentLesson?.let { lesson ->
@@ -89,6 +90,19 @@ fun LessonScreen(
                 // Thẻ hình ảnh: sound{lessonId}.mp3
                 playSoundInternal("sound${lesson.id}")
             }
+        }
+        
+        // Tự động đánh dấu hoàn thành cho các màn học (vì không có mic ở đây)
+        if (uiState.lessons.isNotEmpty()) {
+            viewModel.markCurrentAsCompleted()
+        }
+    }
+
+    // Hiển thị thông báo nếu có lỗi (ví dụ: chưa hoàn thành hết các câu)
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            viewModel.clearError()
         }
     }
 

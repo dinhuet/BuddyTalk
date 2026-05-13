@@ -1,11 +1,15 @@
 package com.example.buddytalk.ui.screen
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -15,16 +19,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.buddytalk.data.viewModel.LearningMode
 import com.example.buddytalk.data.viewModel.TopicViewModel
 import com.example.buddytalk.data.viewModel.TopicUiState
+import com.example.buddytalk.data.viewModel.TopicViewMode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,6 +45,7 @@ fun TopicScreen(
     val topics by viewModel.topicsWithCount.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val learningMode by viewModel.learningMode.collectAsState()
+    val viewMode by viewModel.viewMode.collectAsState()
     val headerTitle = when (mode) {
         "practice" -> "Chủ đề luyện tập"
         "quiz" -> "Chủ đề trắc nghiệm"
@@ -176,27 +185,264 @@ fun TopicScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Danh sách chủ đề",
+                    text = "Danh sách",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF333333)
                 )
+                
+                // View Mode Toggle
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFF1F5F9),
+                    modifier = Modifier.height(40.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        ViewModeButton(
+                            icon = Icons.Default.GridView,
+                            isSelected = viewMode == TopicViewMode.LIST,
+                            onClick = { viewModel.onViewModeChange(TopicViewMode.LIST) }
+                        )
+                        ViewModeButton(
+                            icon = Icons.Default.AccountTree,
+                            isSelected = viewMode == TopicViewMode.TREE,
+                            onClick = { viewModel.onViewModeChange(TopicViewMode.TREE) }
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(bottom = 24.dp)
-            ) {
-                items(topics) { topicState ->
-                    TopicItem(
-                        topicState = topicState,
-                        onClick = { onTopicClick(topicState.topic.id, learningMode.name) }
-                    )
+            if (viewMode == TopicViewMode.LIST) {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(bottom = 24.dp)
+                ) {
+                    items(topics) { topicState ->
+                        TopicItem(
+                            topicState = topicState,
+                            onClick = { onTopicClick(topicState.topic.id, learningMode.name) }
+                        )
+                    }
                 }
+            } else {
+                TopicTreeView(
+                    topics = topics,
+                    onTopicClick = { onTopicClick(it.topic.id, learningMode.name) }
+                )
             }
         }
+    }
+}
+
+@Composable
+fun ViewModeButton(
+    icon: ImageVector,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .size(32.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(8.dp),
+        color = if (isSelected) Color.White else Color.Transparent,
+        shadowElevation = if (isSelected) 2.dp else 0.dp
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = if (isSelected) Color(0xFF2196F3) else Color.Gray,
+            modifier = Modifier
+                .padding(6.dp)
+                .size(20.dp)
+        )
+    }
+}
+
+@Composable
+fun TopicTreeView(
+    topics: List<TopicUiState>,
+    onTopicClick: (TopicUiState) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        contentPadding = PaddingValues(bottom = 40.dp)
+    ) {
+        itemsIndexed(topics) { index, topicState ->
+            TopicTreeItem(
+                topicState = topicState,
+                isFirst = index == 0,
+                isLast = index == topics.size - 1,
+                alignRight = index % 2 != 0,
+                onClick = { onTopicClick(topicState) }
+            )
+        }
+    }
+}
+
+@Composable
+fun TopicTreeItem(
+    topicState: TopicUiState,
+    isFirst: Boolean,
+    isLast: Boolean,
+    alignRight: Boolean,
+    onClick: () -> Unit
+) {
+    val isLocked = topicState.topic.isLocked
+    val isCompleted = topicState.isCompleted // Should be updated in VM logic
+    
+    // In the image, "Động vật" is green (completed/active?), "Nghề nghiệp" is blue (current), others are grey (locked)
+    // Let's assume: Green = Completed, Blue = Next/Current, Grey = Locked
+    val circleColor = when {
+        isLocked -> Color(0xFFE5E7EB)
+        isCompleted -> Color(0xFF10B981)
+        else -> Color(0xFF2196F3)
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(120.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        // Vertical line
+        if (!isLast) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                drawLine(
+                    color = Color(0xFFE5E7EB),
+                    start = Offset(size.width / 2, size.height / 2),
+                    end = Offset(size.width / 2, size.height),
+                    strokeWidth = 2.dp.toPx()
+                )
+            }
+        }
+        if (!isFirst) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                drawLine(
+                    color = Color(0xFFE5E7EB),
+                    start = Offset(size.width / 2, 0f),
+                    end = Offset(size.width / 2, size.height / 2),
+                    strokeWidth = 2.dp.toPx()
+                )
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            if (alignRight) {
+                // Info on the left
+                TopicTreeInfo(topicState, textAlign = TextAlign.End, modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.width(16.dp))
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
+            }
+
+            // Circle with Icon
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .shadow(if (isLocked) 0.dp else 4.dp, CircleShape)
+                    .clip(CircleShape)
+                    .background(circleColor)
+                    .border(
+                        width = 4.dp,
+                        color = if (isCompleted || !isLocked) circleColor.copy(alpha = 0.2f) else Color.Transparent,
+                        shape = CircleShape
+                    )
+                    .clickable(enabled = !isLocked) { onClick() },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = when(topicState.topic.name) {
+                        "Động vật" -> "🦁"
+                        "Nghề nghiệp" -> "👩‍🍳"
+                        "Gia đình" -> "👨‍👩‍👧"
+                        "Thức ăn" -> "🍕"
+                        "Quần áo" -> "👕"
+                        else -> "📚"
+                    },
+                    fontSize = 32.sp,
+                    modifier = Modifier.alpha(if (isLocked) 0.5f else 1f)
+                )
+                
+                // Status icon (check or lock)
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.TopEnd
+                ) {
+                    if (isCompleted) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color.White,
+                            modifier = Modifier.size(20.dp).offset(x = (-4).dp, y = 4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                tint = Color(0xFF10B981),
+                                modifier = Modifier.padding(2.dp)
+                            )
+                        }
+                    } else if (isLocked) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color.White,
+                            modifier = Modifier.size(20.dp).offset(x = (-4).dp, y = 4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = Color.Gray,
+                                modifier = Modifier.padding(4.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (!alignRight) {
+                // Info on the right
+                Spacer(modifier = Modifier.width(16.dp))
+                TopicTreeInfo(topicState, textAlign = TextAlign.Start, modifier = Modifier.weight(1f))
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+fun TopicTreeInfo(
+    topicState: TopicUiState,
+    textAlign: TextAlign,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = if (textAlign == TextAlign.End) Alignment.End else Alignment.Start
+    ) {
+        Text(
+            text = topicState.topic.name,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = if (topicState.topic.isLocked) Color.Gray else Color(0xFF333333),
+            textAlign = textAlign
+        )
+        Text(
+            text = "${topicState.lessonCount} câu",
+            fontSize = 13.sp,
+            color = Color.Gray,
+            textAlign = textAlign
+        )
     }
 }
 

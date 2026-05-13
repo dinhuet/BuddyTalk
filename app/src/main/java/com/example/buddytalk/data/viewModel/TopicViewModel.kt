@@ -22,6 +22,11 @@ enum class LearningMode {
     QUIZ_AUDIO_IMAGE
 }
 
+enum class TopicViewMode {
+    LIST,
+    TREE
+}
+
 data class TopicUiState(
     val topic: Topic,
     val lessonCount: Int,
@@ -38,6 +43,9 @@ class TopicViewModel(application: Application) : AndroidViewModel(application) {
     private val _learningMode = MutableStateFlow(LearningMode.IMAGE)
     val learningMode = _learningMode.asStateFlow()
 
+    private val _viewMode = MutableStateFlow(TopicViewMode.TREE)
+    val viewMode = _viewMode.asStateFlow()
+
     private val _topicsWithCount = MutableStateFlow<List<TopicUiState>>(emptyList())
     val topicsWithCount: StateFlow<List<TopicUiState>> = _topicsWithCount.asStateFlow()
 
@@ -51,7 +59,6 @@ class TopicViewModel(application: Application) : AndroidViewModel(application) {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun observeTopics() {
-        // Kết hợp chế độ học, tìm kiếm và danh sách topic để tính toán số câu chính xác
         _learningMode
             .flatMapLatest { mode ->
                 val targetType = when (mode) {
@@ -78,13 +85,12 @@ class TopicViewModel(application: Application) : AndroidViewModel(application) {
                     if (filteredTopics.isEmpty()) {
                         flowOf(emptyList<TopicUiState>())
                     } else {
-                        // Với mỗi topic, ta quan sát Flow danh sách bài học để đếm số câu theo mode
                         val topicUiStateFlows = filteredTopics.map { topic ->
                             lessonRepository.getLessonsByTopicId(topic.id).map { lessons ->
                                 TopicUiState(
                                     topic = topic,
                                     lessonCount = lessons.count { it.isWordLesson == targetType },
-                                    isCompleted = false // Có thể thêm logic kiểm tra hoàn thành ở đây
+                                    isCompleted = topic.name == "Động vật" // Giả lập trạng thái để hiển thị giống mẫu
                                 )
                             }
                         }
@@ -202,11 +208,7 @@ class TopicViewModel(application: Application) : AndroidViewModel(application) {
         sentenceLessons.forEach { lessonRepository.insertLesson(it) }
     }
 
-    fun onSearchQueryChange(query: String) {
-        _searchQuery.value = query
-    }
-
-    fun onLearningModeChange(mode: LearningMode) {
-        _learningMode.value = mode
-    }
+    fun onSearchQueryChange(query: String) { _searchQuery.value = query }
+    fun onLearningModeChange(mode: LearningMode) { _learningMode.value = mode }
+    fun onViewModeChange(mode: TopicViewMode) { _viewMode.value = mode }
 }

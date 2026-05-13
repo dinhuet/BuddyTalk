@@ -134,27 +134,25 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
 
     fun loadLessons(topicId: Long, mode: String) {
         viewModelScope.launch {
-            lessonRepository.getLessonsByTopicId(topicId)
-                .map { allLessons ->
-                    allLessons.filter { lesson ->
-                        when (mode) {
-                            "TEXT" -> lesson.isWordLesson == 1
-                            "SENTENCE" -> lesson.isWordLesson == 3
-                            else -> lesson.isWordLesson == 0
-                        }
-                    }
+            // Sử dụng first() để lấy danh sách bài học 1 lần duy nhất, tránh reset trạng thái khi database thay đổi
+            val allLessons = lessonRepository.getLessonsByTopicId(topicId).first()
+            val filteredLessons = allLessons.filter { lesson ->
+                when (mode) {
+                    "TEXT" -> lesson.isWordLesson == 1
+                    "SENTENCE" -> lesson.isWordLesson == 3
+                    else -> lesson.isWordLesson == 0
                 }
-                .collect { filteredLessons ->
-                    _uiState.update { it.copy(
-                        lessons = filteredLessons,
-                        isLoading = false,
-                        currentIndex = 0,
-                        isFinished = false,
-                        completedIndices = emptySet(),
-                        mispronouncedIndices = emptySet(),
-                        errorMessage = null
-                    ) }
-                }
+            }
+            
+            _uiState.update { it.copy(
+                lessons = filteredLessons,
+                isLoading = false,
+                currentIndex = 0,
+                isFinished = false,
+                completedIndices = emptySet(),
+                mispronouncedIndices = emptySet(),
+                errorMessage = null
+            ) }
         }
     }
 
@@ -170,9 +168,9 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
                     errorMessage = null
                 )
             } else {
-                // At last lesson: check if all are completed
+                // Ở bài cuối cùng: kiểm tra xem tất cả đã được hoàn thành chưa
                 if (state.completedIndices.size < state.lessons.size) {
-                    state.copy(errorMessage = "Bé hãy hoàn thành các câu trước nhé!")
+                    state.copy(errorMessage = "Bé hãy hoàn thành các bài trước nhé!")
                 } else {
                     state.copy(isFinished = true, errorMessage = null)
                 }
@@ -200,6 +198,12 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
     
+    fun markCurrentAsCompleted() {
+        _uiState.update { state ->
+            state.copy(completedIndices = state.completedIndices + state.currentIndex)
+        }
+    }
+
     fun resetFinish() {
         _uiState.update { it.copy(isFinished = false) }
     }

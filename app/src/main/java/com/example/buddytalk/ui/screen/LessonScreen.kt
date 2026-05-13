@@ -3,6 +3,7 @@ package com.example.buddytalk.ui.screen
 import android.content.Context
 import android.media.MediaPlayer
 import android.widget.Toast
+import androidx.compose.animation.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -23,12 +24,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.buddytalk.R
 import com.example.buddytalk.data.entity.Lesson
 import com.example.buddytalk.data.viewModel.LessonViewModel
+import kotlinx.coroutines.delay
 
 @Composable
 fun LessonScreen(
@@ -43,6 +46,26 @@ fun LessonScreen(
     
     // Quản lý MediaPlayer duy nhất để có thể ngắt âm thanh cũ
     var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
+
+    // State cho pop-up khuyến khích
+    var showEncouragement by remember { mutableStateOf(false) }
+    var encouragementMessage by remember { mutableStateOf("") }
+    var lastTriggeredIndex by remember { mutableIntStateOf(0) }
+    
+    val encouragementMessages = remember {
+        listOf(
+            "Bé giỏi quá! 🎉",
+            "Cố lên nào, bé yêu! 💪",
+            "Tuyệt vời ông mặt trời! ☀️",
+            "Bé làm tốt lắm! 👍",
+            "Tiếp tục phát huy nhé! 🚀",
+            "Hoan hô bé nào! 👏👏",
+            "Bé thông minh quá! 🧠",
+            "Sắp hoàn thành rồi, cố lên! 🏁",
+            "Đáng yêu quá đi thôi! 🥰",
+            "Bé là nhất luôn! 🏆"
+        )
+    }
 
     // Giải phóng MediaPlayer khi thoát màn hình
     DisposableEffect(Unit) {
@@ -75,6 +98,20 @@ fun LessonScreen(
 
     LaunchedEffect(topicId, mode) {
         viewModel.loadLessons(topicId, mode)
+    }
+
+    // Logic hiện pop-up mỗi khi tiến thêm 2 câu (khi currentIndex chia hết cho 2 và > 0)
+    LaunchedEffect(uiState.currentIndex) {
+        if (uiState.currentIndex > lastTriggeredIndex && uiState.currentIndex % 2 == 0) {
+            lastTriggeredIndex = uiState.currentIndex
+            encouragementMessage = encouragementMessages.random()
+            showEncouragement = true
+            delay(2000) // Hiện trong 2 giây
+            showEncouragement = false
+        } else if (uiState.currentIndex < lastTriggeredIndex) {
+            // Cập nhật lại lastTriggeredIndex nếu bé quay lại để logic vẫn đúng khi tiến lên lại
+            lastTriggeredIndex = uiState.currentIndex
+        }
     }
 
     // Tự động phát âm thanh khi chuyển câu và đánh dấu hoàn thành
@@ -130,113 +167,143 @@ fun LessonScreen(
 
     val currentLesson = uiState.lessons.getOrNull(uiState.currentIndex)
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF5F9FF))
-    ) {
-        // Header
-        Box(
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp)
-                .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(Color(0xFF2196F3), Color(0xFF64B5F6))
-                    )
-                ),
-            contentAlignment = Alignment.Center
+                .fillMaxSize()
+                .background(Color(0xFFF5F9FF))
         ) {
-            Text(
-                text = if (mode == "TEXT") "Thẻ chữ" else "Thẻ hình ảnh",
-                color = Color.White,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        Spacer(modifier = Modifier.height(40.dp))
-
-        // Content
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 24.dp)
-                .fillMaxWidth(),
-            contentAlignment = Alignment.Center
-        ) {
-            if (currentLesson != null) {
-                if (mode == "TEXT") {
-                    TextLessonContent(
-                        lesson = currentLesson,
-                        onWordClick = { playSoundInternal("sound${currentLesson.id}_2") }
-                    )
-                } else {
-                    ImageLessonContent(
-                        lesson = currentLesson,
-                        onImageClick = { playSoundInternal("sound${currentLesson.id}") }
-                    )
-                }
-            }
-        }
-
-        // Bottom Controls
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 40.dp, start = 24.dp, end = 24.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Back Button
-            IconButton(
-                onClick = { 
-                    mediaPlayer?.stop()
-                    viewModel.previousLesson() 
-                },
-                enabled = uiState.currentIndex > 0,
+            // Header
+            Box(
                 modifier = Modifier
-                    .size(56.dp)
-                    .background(Color.White, RoundedCornerShape(12.dp))
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(Color(0xFF2196F3), Color(0xFF64B5F6))
+                        )
+                    ),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.ChevronLeft, contentDescription = "Previous", tint = Color.Gray)
+                Text(
+                    text = if (mode == "TEXT") "Thẻ chữ" else "Thẻ hình ảnh",
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
-            // Sound Button (Replay)
-            Surface(
-                modifier = Modifier.size(80.dp),
-                shape = CircleShape,
-                color = Color(0xFF2196F3),
-                shadowElevation = 4.dp,
-                onClick = {
-                    currentLesson?.let { lesson ->
-                        if (mode == "TEXT") {
-                            playSoundInternal("sound${lesson.id}_1") {
-                                playSoundInternal("sound${lesson.id}_2")
-                            }
-                        } else {
-                            playSoundInternal("sound${lesson.id}")
-                        }
+            Spacer(modifier = Modifier.height(40.dp))
+
+            // Content
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 24.dp)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                if (currentLesson != null) {
+                    if (mode == "TEXT") {
+                        TextLessonContent(
+                            lesson = currentLesson,
+                            onWordClick = { playSoundInternal("sound${currentLesson.id}_2") }
+                        )
+                    } else {
+                        ImageLessonContent(
+                            lesson = currentLesson,
+                            onImageClick = { playSoundInternal("sound${currentLesson.id}") }
+                        )
                     }
                 }
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.VolumeUp, contentDescription = "Play Sound", tint = Color.White, modifier = Modifier.size(32.dp))
-                }
             }
 
-            // Next Button
-            IconButton(
-                onClick = { 
-                    mediaPlayer?.stop()
-                    viewModel.nextLesson() 
-                },
+            // Bottom Controls
+            Row(
                 modifier = Modifier
-                    .size(56.dp)
-                    .background(Color.White, RoundedCornerShape(12.dp))
+                    .fillMaxWidth()
+                    .padding(bottom = 40.dp, start = 24.dp, end = 24.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.ChevronRight, contentDescription = "Next", tint = Color.Gray)
+                // Back Button
+                IconButton(
+                    onClick = { 
+                        mediaPlayer?.stop()
+                        viewModel.previousLesson() 
+                    },
+                    enabled = uiState.currentIndex > 0,
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(Color.White, RoundedCornerShape(12.dp))
+                ) {
+                    Icon(Icons.Default.ChevronLeft, contentDescription = "Previous", tint = Color.Gray)
+                }
+
+                // Sound Button (Replay)
+                Surface(
+                    modifier = Modifier.size(80.dp),
+                    shape = CircleShape,
+                    color = Color(0xFF2196F3),
+                    shadowElevation = 4.dp,
+                    onClick = {
+                        currentLesson?.let { lesson ->
+                            if (mode == "TEXT") {
+                                playSoundInternal("sound${lesson.id}_1") {
+                                    playSoundInternal("sound${lesson.id}_2")
+                                }
+                            } else {
+                                playSoundInternal("sound${lesson.id}")
+                            }
+                        }
+                    }
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.VolumeUp, contentDescription = "Play Sound", tint = Color.White, modifier = Modifier.size(32.dp))
+                    }
+                }
+
+                // Next Button
+                IconButton(
+                    onClick = { 
+                        mediaPlayer?.stop()
+                        viewModel.nextLesson() 
+                    },
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(Color.White, RoundedCornerShape(12.dp))
+                ) {
+                    Icon(Icons.Default.ChevronRight, contentDescription = "Next", tint = Color.Gray)
+                }
+            }
+        }
+
+        // Encouragement Pop-up Overlay
+        AnimatedVisibility(
+            visible = showEncouragement,
+            enter = fadeIn() + slideInVertically(initialOffsetY = { -it }),
+            exit = fadeOut() + slideOutVertically(targetOffsetY = { -it }),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 140.dp)
+        ) {
+            Surface(
+                modifier = Modifier
+                    .padding(horizontal = 32.dp)
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                color = Color(0xFF4CAF50), // Màu xanh lá khuyến khích
+                shadowElevation = 8.dp
+            ) {
+                Text(
+                    text = encouragementMessage,
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(20.dp)
+                )
             }
         }
     }

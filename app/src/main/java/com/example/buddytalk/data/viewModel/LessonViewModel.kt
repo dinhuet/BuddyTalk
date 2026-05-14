@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.buddytalk.data.database.AppDatabase
 import com.example.buddytalk.data.entity.Lesson
 import com.example.buddytalk.data.repository.LessonRepository
-import com.example.buddytalk.data.vosk.VoskManager
+import com.example.buddytalk.data.speech.SpeechRecognitionManager
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -28,7 +28,7 @@ data class LessonUiState(
 
 class LessonViewModel(application: Application) : AndroidViewModel(application) {
     private val lessonRepository: LessonRepository
-    private val voskManager = VoskManager(application)
+    private val speechManager = SpeechRecognitionManager(application)
     
     private val _uiState = MutableStateFlow(LessonUiState())
     val uiState: StateFlow<LessonUiState> = _uiState.asStateFlow()
@@ -37,30 +37,32 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
         val database = AppDatabase.getDatabase(application)
         lessonRepository = LessonRepository(database.lessonDao())
         
-        // Initialize Vosk Model
-        initVoskModel("model-vn")
+        // Initialize Parakeet API client
+        initSpeechRecognition()
     }
 
-    private fun initVoskModel(modelPath: String) {
-        voskManager.initModel(modelPath, object : VoskManager.VoskCallback {
-            override fun onResult(text: String) {
-                if (text.isNotEmpty()) {
-                    handleRecognitionResult(text)
+    private fun initSpeechRecognition() {
+        speechManager.initialize(
+            callback = object : SpeechRecognitionManager.RecognitionCallback {
+                override fun onResult(text: String) {
+                    if (text.isNotEmpty()) {
+                        handleRecognitionResult(text)
+                    }
+                }
+
+                override fun onPartialResult(text: String) {
+                    _uiState.update { it.copy(partialText = text) }
+                }
+
+                override fun onError(e: Exception) {
+                    _uiState.update { it.copy(errorMessage = e.message) }
+                }
+
+                override fun onReady() {
+                    _uiState.update { it.copy(isModelLoaded = true) }
                 }
             }
-
-            override fun onPartialResult(text: String) {
-                _uiState.update { it.copy(partialText = text) }
-            }
-
-            override fun onError(e: Exception) {
-                _uiState.update { it.copy(errorMessage = e.message) }
-            }
-
-            override fun onModelLoaded() {
-                _uiState.update { it.copy(isModelLoaded = true) }
-            }
-        })
+        )
     }
 
     private fun handleRecognitionResult(text: String) {
@@ -93,6 +95,7 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
                 recognizedText = text,
                 partialText = "",
                 isCorrect = isMatch,
+                isListening = false,
                 mispronouncedIndices = if (text.isEmpty()) emptySet() else mispronouncedIndices,
                 completedIndices = if (isMatch) state.completedIndices + state.currentIndex else state.completedIndices
             )
@@ -102,10 +105,12 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
     fun startListening() {
         if (_uiState.value.isModelLoaded) {
             _uiState.update { it.copy(isListening = true, recognizedText = "", partialText = "", isCorrect = false, mispronouncedIndices = emptySet(), errorMessage = null) }
-            voskManager.startListening(object : VoskManager.VoskCallback {
+            speechManager.startListening(object : SpeechRecognitionManager.RecognitionCallback {
                 override fun onResult(text: String) {
                     if (text.isNotEmpty()) {
                         handleRecognitionResult(text)
+                    } else {
+                        _uiState.update { it.copy(isListening = false, partialText = "") }
                     }
                 }
                 override fun onPartialResult(text: String) {
@@ -114,14 +119,16 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
                 override fun onError(e: Exception) {
                     _uiState.update { it.copy(errorMessage = e.message, isListening = false) }
                 }
-                override fun onModelLoaded() {}
+                override fun onReady() {}
             })
         }
     }
 
     fun stopListening() {
-        voskManager.stopListening()
-        _uiState.update { it.copy(isListening = false) }
+        speechManager.stopListening()
+        // Note: isListening will be set to false when the API returns the result
+        // Update partial text to show processing state
+        _uiState.update { it.copy(partialText = "Đang nhận diện...") }
     }
 
     fun resetPractice() {
@@ -206,6 +213,6 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
 
     override fun onCleared() {
         super.onCleared()
-        voskManager.release()
+        speechManager.release()
     }
 }

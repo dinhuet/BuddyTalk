@@ -100,7 +100,7 @@ fun PracticePronunciationScreen(
         }
     }
 
-    // Status mapping based on Vosk state
+    // Status mapping based on speech recognition state
     val feedbackText = when {
         !uiState.isModelLoaded -> "ĐANG TẢI DỮ LIỆU..."
         uiState.isListening -> if (uiState.partialText.isEmpty()) "CON NÓI ĐI, BÉ ĐANG NGHE..." else uiState.partialText.uppercase()

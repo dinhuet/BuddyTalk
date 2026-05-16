@@ -180,9 +180,9 @@ fun IconCard(
             .aspectRatio(1f)
             .clickable { onClick() },
         shape = RoundedCornerShape(24.dp),
-        color = Color.White,
-        border = BorderStroke(1.5.dp, color.copy(alpha = 0.3f)),
-        shadowElevation = 1.dp
+        color = color.copy(alpha = 0.25f),
+        border = BorderStroke(1.5.dp, color.copy(alpha = 0.5f)),
+        shadowElevation = 0.dp
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -192,7 +192,7 @@ fun IconCard(
                 modifier = Modifier
                     .size(72.dp)
                     .clip(RoundedCornerShape(20.dp))
-                    .background(color.copy(alpha = 0.1f)),
+                    .background(Color.White),
                 contentAlignment = Alignment.Center
             ) {
                 Text(icon, fontSize = 36.sp)

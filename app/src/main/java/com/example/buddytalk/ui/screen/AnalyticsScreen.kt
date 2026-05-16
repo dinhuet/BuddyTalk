@@ -156,49 +156,6 @@ fun AnalyticsScreen(
         }
 
         Spacer(modifier = Modifier.height(32.dp))
-
-        // Common Errors Section
-        Text(
-            "Lỗi thường gặp",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF1F2937)
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            color = Color.White,
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF3F4F6))
-        ) {
-            Row(
-                modifier = Modifier.padding(24.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        "Phát âm âm 'th'",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF374151)
-                    )
-                    Text(
-                        "Cần luyện tập thêm",
-                        fontSize = 14.sp,
-                        color = Color(0xFF6B7280)
-                    )
-                }
-                Text(
-                    "45%",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color(0xFFEF4444)
-                )
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 

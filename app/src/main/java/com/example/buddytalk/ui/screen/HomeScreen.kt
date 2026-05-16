@@ -22,15 +22,18 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.buddytalk.data.viewModel.HomeViewModel
+import com.example.buddytalk.data.viewModel.UserViewModel
 import com.example.buddytalk.ui.navigation.Routes
 import com.example.buddytalk.ui.theme.HeaderBlue
 
 @Composable
 fun HomeScreen(
     navController: NavController,
+    userViewModel: UserViewModel,
     viewModel: HomeViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val user by userViewModel.user.collectAsState()
 
     Column(
         modifier = Modifier
@@ -78,7 +81,7 @@ fun HomeScreen(
                         Text("🔥", fontSize = 16.sp)
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "${uiState.streak}",
+                            text = "${user?.streak ?: 0}",
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFFF4B4B)
                         )

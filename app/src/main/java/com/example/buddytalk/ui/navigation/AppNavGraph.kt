@@ -50,7 +50,10 @@ fun AppNavGraph(
         modifier = modifier
     ) {
         composable(Routes.Home.route) {
-            HomeScreen(navController = navController)
+            HomeScreen(
+                navController = navController,
+                userViewModel = userViewModel
+            )
         }
         composable(Routes.QuizMenu.route) {
             QuizMenuScreen(navController = navController)

@@ -5,7 +5,9 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.buddytalk.data.database.AppDatabase
+import com.example.buddytalk.data.entity.StudySession
 import com.example.buddytalk.data.entity.UserEntity
+import com.example.buddytalk.data.repository.StudySessionRepository
 import com.example.buddytalk.data.repository.UserRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -22,6 +24,7 @@ import java.util.Calendar
 
 class UserViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: UserRepository
+    private val studySessionRepository: StudySessionRepository
     private val context = application.applicationContext
 
     private val _user = MutableStateFlow<UserEntity?>(null)
@@ -31,8 +34,10 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     val streakUpdatedEvent: SharedFlow<Int> = _streakUpdatedEvent.asSharedFlow()
 
     init {
-        val userDao = AppDatabase.getDatabase(application).userDao()
+        val db = AppDatabase.getDatabase(application)
+        val userDao = db.userDao()
         repository = UserRepository(userDao)
+        studySessionRepository = StudySessionRepository(db.studySessionDao())
         
         viewModelScope.launch {
             repository.getUser().collect {
@@ -57,6 +62,9 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val currentUser = _user.value ?: return@launch
             val now = System.currentTimeMillis()
+
+            studySessionRepository.insert(StudySession(timestamp = now))
+
             val lastStudy = currentUser.lastStudyDate
 
             if (lastStudy == null) {

@@ -4,7 +4,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -17,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -122,112 +122,81 @@ fun HomeScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(40.dp))
-
-        // Action Cards
-        ActionCard(
-            title = "Học",
-            subtitle = "TIẾP TỤC ${uiState.currentLesson}",
-            icon = "📚",
-            color = Color(0xFF2196F3),
-            onClick = { navController.navigate(Routes.Topics.createRoute("learn")) }
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        ActionCard(
-            title = "Luyện tập",
-            subtitle = "KIỂM TRA NĂNG LỰC",
-            icon = "🎯",
-            color = Color(0xFFA855F7),
-            onClick = { navController.navigate(Routes.Topics.createRoute("practice")) }
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-
-        ActionCard(
-            title = "Trắc nghiệm",
-            subtitle = "GHÉP - NGHE - CHỌN",
-            icon = "🧩",
-            color = Color(0xFFF59E0B),
-            onClick = { navController.navigate(Routes.QuizMenu.route) }
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        ActionCard(
-            title = "Thống kê",
-            subtitle = "TIẾN ĐỘ CỦA BẠN",
-            icon = "📊",
-            color = Color(0xFF10B981),
-            onClick = { navController.navigate(Routes.Analytics.route) }
-        )
-
         Spacer(modifier = Modifier.height(32.dp))
-        
-        // Daily Mission
+
+        // Action Grid
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                IconCard(
+                    icon = "📚",
+                    color = Color(0xFF2196F3),
+                    modifier = Modifier.weight(1f),
+                    onClick = { navController.navigate(Routes.Topics.createRoute("learn")) }
+                )
+                IconCard(
+                    icon = "🎯",
+                    color = Color(0xFFA855F7),
+                    modifier = Modifier.weight(1f),
+                    onClick = { navController.navigate(Routes.Topics.createRoute("practice")) }
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                IconCard(
+                    icon = "🧩",
+                    color = Color(0xFFF59E0B),
+                    modifier = Modifier.weight(1f),
+                    onClick = { navController.navigate(Routes.QuizMenu.route) }
+                )
+                IconCard(
+                    icon = "📊",
+                    color = Color(0xFF10B981),
+                    modifier = Modifier.weight(1f),
+                    onClick = { navController.navigate(Routes.Analytics.route) }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         DailyMissionItem()
     }
 }
 
 @Composable
-fun ActionCard(
-    title: String,
-    subtitle: String,
+fun IconCard(
     icon: String,
     color: Color,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(100.dp)
+        modifier = modifier
+            .aspectRatio(1f)
             .clickable { onClick() },
         shape = RoundedCornerShape(24.dp),
         color = Color.White,
-        border = BorderStroke(2.dp, color.copy(alpha = 0.5f)),
-        shadowElevation = 0.dp
+        border = BorderStroke(1.5.dp, color.copy(alpha = 0.3f)),
+        shadowElevation = 1.dp
     ) {
-        Row(
-            modifier = Modifier
-                .padding(horizontal = 24.dp)
-                .fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
             Box(
                 modifier = Modifier
-                    .size(60.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                    .size(72.dp)
+                    .clip(RoundedCornerShape(20.dp))
                     .background(color.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(icon, fontSize = 32.sp)
+                Text(icon, fontSize = 36.sp)
             }
-            
-            Spacer(modifier = Modifier.width(20.dp))
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color(0xFF333333)
-                )
-                Text(
-                    text = subtitle,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = color,
-                    letterSpacing = 1.sp
-                )
-            }
-            
-            Icon(
-                Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = color,
-                modifier = Modifier.size(32.dp)
-            )
         }
     }
 }
@@ -236,28 +205,30 @@ fun ActionCard(
 fun DailyMissionItem() {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        color = Color(0xFFF9FAFB)
+        shape = RoundedCornerShape(20.dp),
+        color = Color(0xFFFFF7ED),
+        border = BorderStroke(1.dp, Color(0xFFFFE0B0))
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .padding(horizontal = 20.dp, vertical = 14.dp)
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFFFF7ED)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("🎁", fontSize = 24.sp)
-            }
-            Spacer(modifier = Modifier.width(16.dp))
+            Text("🎁", fontSize = 22.sp)
+            Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = "Nhiệm vụ hằng ngày",
-                fontSize = 16.sp,
+                text = "Nhiệm vụ",
+                fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF333333)
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Icon(
+                Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = Color(0xFF333333).copy(alpha = 0.4f),
+                modifier = Modifier.size(20.dp)
             )
         }
     }

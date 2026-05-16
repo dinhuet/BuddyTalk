@@ -12,6 +12,8 @@ import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,10 +26,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.buddytalk.data.viewModel.UserViewModel
 
 @Composable
-fun AnalyticsScreen(navController: NavController) {
-    // navController can be used for navigating to 'Badge Details' or 'Error Details' in the future
+fun AnalyticsScreen(
+    navController: NavController,
+    userViewModel: UserViewModel
+) {
+    val user by userViewModel.user.collectAsState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -54,14 +61,14 @@ fun AnalyticsScreen(navController: NavController) {
             AnalyticsStatCard(
                 modifier = Modifier.weight(1f),
                 title = "Bài học",
-                value = "1,248",
+                value = user.let { "%,d".format(it?.lessonCount ?: 0) },
                 icon = Icons.AutoMirrored.Filled.LibraryBooks,
                 iconColor = Color(0xFF3B82F6)
             )
             AnalyticsStatCard(
                 modifier = Modifier.weight(1f),
                 title = "Chuỗi",
-                value = "14",
+                value = "${user?.streak ?: 0}",
                 unit = "ngày",
                 icon = Icons.Default.Whatshot,
                 iconColor = Color(0xFFF97316)

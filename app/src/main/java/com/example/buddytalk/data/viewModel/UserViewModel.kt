@@ -60,34 +60,25 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
             val lastStudy = currentUser.lastStudyDate
 
             if (lastStudy == null) {
-                // First time ever
-                updateStreak(currentUser, 1, now)
+                repository.updateUserAfterLesson(currentUser, 1, now)
                 _streakUpdatedEvent.emit(1)
             } else {
                 val lastCalendar = Calendar.getInstance().apply { timeInMillis = lastStudy }
                 val nowCalendar = Calendar.getInstance().apply { timeInMillis = now }
 
                 if (isSameDay(lastCalendar, nowCalendar)) {
-                    // Already studied today, do nothing for streak count
                     return@launch
                 }
 
-                if (isYesterday(lastCalendar, nowCalendar)) {
-                    // Consecutive day
-                    val newStreak = currentUser.streak + 1
-                    updateStreak(currentUser, newStreak, now)
-                    _streakUpdatedEvent.emit(newStreak)
+                val newStreak = if (isYesterday(lastCalendar, nowCalendar)) {
+                    currentUser.streak + 1
                 } else {
-                    // Gap in studying, reset to 1
-                    updateStreak(currentUser, 1, now)
-                    _streakUpdatedEvent.emit(1)
+                    1
                 }
+                repository.updateUserAfterLesson(currentUser, newStreak, now)
+                _streakUpdatedEvent.emit(newStreak)
             }
         }
-    }
-
-    private suspend fun updateStreak(user: UserEntity, newStreak: Int, timestamp: Long) {
-        repository.updateStreak(user, newStreak, timestamp)
     }
 
     private fun isSameDay(cal1: Calendar, cal2: Calendar): Boolean {

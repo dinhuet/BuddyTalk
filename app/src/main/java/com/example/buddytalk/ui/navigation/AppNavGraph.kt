@@ -59,7 +59,10 @@ fun AppNavGraph(
             QuizMenuScreen(navController = navController)
         }
         composable(Routes.Analytics.route) {
-            AnalyticsScreen(navController = navController)
+            AnalyticsScreen(
+                navController = navController,
+                userViewModel = userViewModel
+            )
         }
         composable(Routes.Profile.route) {
             ProfileScreen(

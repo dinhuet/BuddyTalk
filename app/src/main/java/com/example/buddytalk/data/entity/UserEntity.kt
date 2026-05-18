@@ -11,6 +11,7 @@ data class UserEntity(
     val totalXP: Int = 0, // Added totalXP
     val rank: String,
     val streak: Int,
+    val lessonCount: Int = 0,
     val lastStudyDate: Long? = null,
     val avatarUrl: String? = null
 )

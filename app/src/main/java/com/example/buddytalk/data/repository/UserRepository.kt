@@ -20,8 +20,12 @@ class UserRepository(private val userDao: UserDao) {
         userDao.insertUser(currentUser.copy(avatarUrl = newUrl))
     }
 
-    suspend fun updateStreak(currentUser: UserEntity, newStreak: Int, lastStudyDate: Long) {
-        userDao.insertUser(currentUser.copy(streak = newStreak, lastStudyDate = lastStudyDate))
+    suspend fun updateUserAfterLesson(currentUser: UserEntity, newStreak: Int, lastStudyDate: Long) {
+        userDao.insertUser(currentUser.copy(
+            streak = newStreak,
+            lessonCount = currentUser.lessonCount + 1,
+            lastStudyDate = lastStudyDate
+        ))
     }
 
     suspend fun hasReceivedXP(lessonId: Long): Boolean {

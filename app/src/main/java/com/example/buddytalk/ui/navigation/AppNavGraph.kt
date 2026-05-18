@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
+import com.example.buddytalk.data.viewModel.AnalyticsViewModel
 import com.example.buddytalk.data.viewModel.UserViewModel
 import com.example.buddytalk.data.viewModel.TopicViewModel
 import com.example.buddytalk.ui.screen.SettingsScreen
@@ -73,13 +74,21 @@ fun AppNavGraph(
         modifier = modifier
     ) {
         composable(Routes.Home.route) {
-            HomeScreen(navController = navController)
+            HomeScreen(
+                navController = navController,
+                userViewModel = userViewModel
+            )
         }
         composable(Routes.QuizMenu.route) {
             QuizMenuScreen(navController = navController)
         }
         composable(Routes.Analytics.route) {
-            AnalyticsScreen(navController = navController)
+            val analyticsViewModel: AnalyticsViewModel = viewModel()
+            AnalyticsScreen(
+                navController = navController,
+                userViewModel = userViewModel,
+                analyticsViewModel = analyticsViewModel
+            )
         }
         composable(Routes.Profile.route) {
             ProfileScreen(

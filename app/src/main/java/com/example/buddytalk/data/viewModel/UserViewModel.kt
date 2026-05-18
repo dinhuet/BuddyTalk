@@ -5,9 +5,11 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.buddytalk.data.database.AppDatabase
+import com.example.buddytalk.data.entity.StudySession
 import com.example.buddytalk.data.entity.UserEntity
 import com.example.buddytalk.data.entity.XPTransaction
 import com.example.buddytalk.data.model.LevelSystem
+import com.example.buddytalk.data.repository.StudySessionRepository
 import com.example.buddytalk.data.repository.UserRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -24,6 +26,7 @@ import java.util.Calendar
 
 class UserViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: UserRepository
+    private val studySessionRepository: StudySessionRepository
     private val context = application.applicationContext
 
     private val _user = MutableStateFlow<UserEntity?>(null)
@@ -37,8 +40,10 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     val xpGainedEvent: SharedFlow<XPResult> = _xpGainedEvent.asSharedFlow()
 
     init {
-        val userDao = AppDatabase.getDatabase(application).userDao()
+        val db = AppDatabase.getDatabase(application)
+        val userDao = db.userDao()
         repository = UserRepository(userDao)
+        studySessionRepository = StudySessionRepository(db.studySessionDao())
         
         viewModelScope.launch {
             repository.getUser().collect {
@@ -75,40 +80,29 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
             val isLevelUp = levelInfo.level > currentUser.level
 
             val now = System.currentTimeMillis()
-            var newStreak = currentUser.streak
+
+            studySessionRepository.insert(StudySession(timestamp = now))
+
             val lastStudy = currentUser.lastStudyDate
 
             if (lastStudy == null) {
-                newStreak = 1
+                repository.updateUserAfterLesson(currentUser, 1, now)
+                _streakUpdatedEvent.emit(1)
             } else {
                 val lastCalendar = Calendar.getInstance().apply { timeInMillis = lastStudy }
                 val nowCalendar = Calendar.getInstance().apply { timeInMillis = now }
-                if (!isSameDay(lastCalendar, nowCalendar)) {
-                    if (isYesterday(lastCalendar, nowCalendar)) newStreak += 1
-                    else newStreak = 1
+
+                if (isSameDay(lastCalendar, nowCalendar)) {
+                    return@launch
                 }
             }
 
-            val updatedUser = currentUser.copy(
-                totalXP = newTotalXP,
-                level = levelInfo.level,
-                rank = levelInfo.badge,
-                streak = newStreak,
-                lastStudyDate = now
-            )
-
-            val transaction = XPTransaction(
-                lessonId = lessonId,
-                xpAmount = xpGained,
-                reason = if (isNewLesson) "NEW_LESSON" else "REVIEW"
-            )
-
-            repository.completeLessonWithXP(updatedUser, transaction)
-            
-            if (!silent || isLevelUp) {
-                _xpGainedEvent.emit(XPResult(xpGained, isLevelUp, levelInfo.level))
-            }
-            if (newStreak != currentUser.streak) {
+                val newStreak = if (isYesterday(lastCalendar, nowCalendar)) {
+                    currentUser.streak + 1
+                } else {
+                    1
+                }
+                repository.updateUserAfterLesson(currentUser, newStreak, now)
                 _streakUpdatedEvent.emit(newStreak)
             }
         }

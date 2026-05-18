@@ -5,7 +5,9 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.buddytalk.data.database.AppDatabase
+import com.example.buddytalk.data.entity.StudySession
 import com.example.buddytalk.data.entity.UserEntity
+import com.example.buddytalk.data.repository.StudySessionRepository
 import com.example.buddytalk.data.repository.UserRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -22,6 +24,7 @@ import java.util.Calendar
 
 class UserViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: UserRepository
+    private val studySessionRepository: StudySessionRepository
     private val context = application.applicationContext
 
     private val _user = MutableStateFlow<UserEntity?>(null)
@@ -31,8 +34,10 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     val streakUpdatedEvent: SharedFlow<Int> = _streakUpdatedEvent.asSharedFlow()
 
     init {
-        val userDao = AppDatabase.getDatabase(application).userDao()
+        val db = AppDatabase.getDatabase(application)
+        val userDao = db.userDao()
         repository = UserRepository(userDao)
+        studySessionRepository = StudySessionRepository(db.studySessionDao())
         
         viewModelScope.launch {
             repository.getUser().collect {
@@ -57,37 +62,31 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val currentUser = _user.value ?: return@launch
             val now = System.currentTimeMillis()
+
+            studySessionRepository.insert(StudySession(timestamp = now))
+
             val lastStudy = currentUser.lastStudyDate
 
             if (lastStudy == null) {
-                // First time ever
-                updateStreak(currentUser, 1, now)
+                repository.updateUserAfterLesson(currentUser, 1, now)
                 _streakUpdatedEvent.emit(1)
             } else {
                 val lastCalendar = Calendar.getInstance().apply { timeInMillis = lastStudy }
                 val nowCalendar = Calendar.getInstance().apply { timeInMillis = now }
 
                 if (isSameDay(lastCalendar, nowCalendar)) {
-                    // Already studied today, do nothing for streak count
                     return@launch
                 }
 
-                if (isYesterday(lastCalendar, nowCalendar)) {
-                    // Consecutive day
-                    val newStreak = currentUser.streak + 1
-                    updateStreak(currentUser, newStreak, now)
-                    _streakUpdatedEvent.emit(newStreak)
+                val newStreak = if (isYesterday(lastCalendar, nowCalendar)) {
+                    currentUser.streak + 1
                 } else {
-                    // Gap in studying, reset to 1
-                    updateStreak(currentUser, 1, now)
-                    _streakUpdatedEvent.emit(1)
+                    1
                 }
+                repository.updateUserAfterLesson(currentUser, newStreak, now)
+                _streakUpdatedEvent.emit(newStreak)
             }
         }
-    }
-
-    private suspend fun updateStreak(user: UserEntity, newStreak: Int, timestamp: Long) {
-        repository.updateStreak(user, newStreak, timestamp)
     }
 
     private fun isSameDay(cal1: Calendar, cal2: Calendar): Boolean {

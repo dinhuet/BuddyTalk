@@ -10,6 +10,7 @@ data class UserEntity(
     val level: Int,
     val rank: String,
     val streak: Int,
+    val lessonCount: Int = 0,
     val lastStudyDate: Long? = null,
     val avatarUrl: String? = null
 )

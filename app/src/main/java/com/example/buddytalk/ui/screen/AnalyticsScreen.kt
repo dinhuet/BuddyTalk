@@ -12,6 +12,8 @@ import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,10 +26,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.buddytalk.data.viewModel.AnalyticsViewModel
+import com.example.buddytalk.data.viewModel.BarData
+import com.example.buddytalk.data.viewModel.UserViewModel
 
 @Composable
-fun AnalyticsScreen(navController: NavController) {
-    // navController can be used for navigating to 'Badge Details' or 'Error Details' in the future
+fun AnalyticsScreen(
+    navController: NavController,
+    userViewModel: UserViewModel,
+    analyticsViewModel: AnalyticsViewModel
+) {
+    val user by userViewModel.user.collectAsState()
+    val analyticsState by analyticsViewModel.uiState.collectAsState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -54,14 +65,14 @@ fun AnalyticsScreen(navController: NavController) {
             AnalyticsStatCard(
                 modifier = Modifier.weight(1f),
                 title = "Bài học",
-                value = "1,248",
+                value = user.let { "%,d".format(it?.lessonCount ?: 0) },
                 icon = Icons.AutoMirrored.Filled.LibraryBooks,
                 iconColor = Color(0xFF3B82F6)
             )
             AnalyticsStatCard(
                 modifier = Modifier.weight(1f),
                 title = "Chuỗi",
-                value = "14",
+                value = "${user?.streak ?: 0}",
                 unit = "ngày",
                 icon = Icons.Default.Whatshot,
                 iconColor = Color(0xFFF97316)
@@ -108,9 +119,12 @@ fun AnalyticsScreen(navController: NavController) {
                     }
                 }
 
-                Spacer(modifier = Modifier.height(48.dp))
+                Spacer(modifier = Modifier.height(32.dp))
                 
-                HistoryChart()
+                HistoryChart(
+                    bars = analyticsState.weeklyBars,
+                    maxCount = analyticsState.maxCount
+                )
             }
         }
 
@@ -148,49 +162,6 @@ fun AnalyticsScreen(navController: NavController) {
             BadgeItem("Chuỗi...", "🔒", Color(0xFFF3F4F6), isLocked = true)
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Common Errors Section
-        Text(
-            "Lỗi thường gặp",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF1F2937)
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            color = Color.White,
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF3F4F6))
-        ) {
-            Row(
-                modifier = Modifier.padding(24.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        "Phát âm âm 'th'",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF374151)
-                    )
-                    Text(
-                        "Cần luyện tập thêm",
-                        fontSize = 14.sp,
-                        color = Color(0xFF6B7280)
-                    )
-                }
-                Text(
-                    "45%",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color(0xFFEF4444)
-                )
-            }
-        }
-        
         Spacer(modifier = Modifier.height(32.dp))
     }
 }
@@ -250,7 +221,10 @@ fun AnalyticsStatCard(
 }
 
 @Composable
-fun HistoryChart() {
+fun HistoryChart(
+    bars: List<BarData>,
+    maxCount: Int
+) {
     Column {
         Box(
             modifier = Modifier
@@ -279,43 +253,21 @@ fun HistoryChart() {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Bottom
             ) {
-                val values = listOf(0.2f, 0.4f, 0.35f, 0.5f, 0.85f, 0.45f, 0.3f)
-                values.forEachIndexed { index, value ->
+                bars.forEach { bar ->
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight(),
                         contentAlignment = Alignment.BottomCenter
                     ) {
-                        // Tooltip for Friday
-                        if (index == 4) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier
-                                    .align(Alignment.TopCenter)
-                                    .offset(y = (-35).dp)
-                            ) {
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = Color(0xFF1F2937)
-                                ) {
-                                    Text(
-                                        "120 bài",
-                                        color = Color.White,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                    )
-                                }
-                            }
-                        }
-
                         Box(
                             modifier = Modifier
-                                .width(12.dp)
-                                .fillMaxHeight(value)
+                                .width(20.dp)
+                                .fillMaxHeight(
+                                    if (bar.count > 0) bar.heightFraction.coerceAtLeast(0.05f) else 0.02f
+                                )
                                 .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
-                                .background(if (index == 4) Color(0xFF1F2937) else Color(0xFFF3F4F6))
+                                .background(if (bar.count > 0) Color(0xFF2196F3) else Color(0xFFF3F4F6))
                         )
                     }
                 }
@@ -328,15 +280,14 @@ fun HistoryChart() {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            val days = listOf("M", "T", "W", "T", "F", "S", "S")
-            days.forEachIndexed { index, day ->
+            bars.forEach { bar ->
                 Text(
-                    text = day,
+                    text = bar.label,
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                     fontSize = 12.sp,
-                    fontWeight = if (index == 4) FontWeight.Black else FontWeight.Bold,
-                    color = if (index == 4) Color(0xFF1F2937) else Color(0xFF9CA3AF)
+                    fontWeight = FontWeight.Bold,
+                    color = if (bar.count > 0) Color(0xFF1F2937) else Color(0xFF9CA3AF)
                 )
             }
         }

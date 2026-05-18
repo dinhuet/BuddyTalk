@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 data class HomeUiState(
-    val streak: Int = 14,
+    val streak: Int = 0,
     val greeting: String = "CHÀO BUỔI SÁNG!",
     val currentLesson: String = "BÀI 4"
 )

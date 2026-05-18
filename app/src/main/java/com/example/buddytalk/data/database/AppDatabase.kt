@@ -10,8 +10,9 @@ import com.example.buddytalk.data.dao.UserDao
 import com.example.buddytalk.data.entity.Lesson
 import com.example.buddytalk.data.entity.Topic
 import com.example.buddytalk.data.entity.UserEntity
+import com.example.buddytalk.data.entity.XPTransaction
 
-@Database(entities = [UserEntity::class, Topic::class, Lesson::class], version = 3, exportSchema = false)
+@Database(entities = [UserEntity::class, Topic::class, Lesson::class, XPTransaction::class], version = 4, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun topicDao(): TopicDao

@@ -20,6 +20,7 @@ import com.example.buddytalk.ui.screen.AnalyticsScreen
 import com.example.buddytalk.ui.screen.QuizMenuScreen
 import com.example.buddytalk.ui.screen.QuizScreen
 import com.example.buddytalk.ui.component.StreakDialog
+import com.example.buddytalk.ui.component.XPCompletionDialog
 
 @Composable
 fun AppNavGraph(
@@ -30,6 +31,9 @@ fun AppNavGraph(
     var showStreakDialog by remember { mutableStateOf(false) }
     var currentStreak by remember { mutableIntStateOf(0) }
 
+    // State for Level Up Dialog (only show if isLevelUp is true)
+    var xpResultState by remember { mutableStateOf<UserViewModel.XPResult?>(null) }
+
     LaunchedEffect(Unit) {
         userViewModel.streakUpdatedEvent.collect { streak ->
             currentStreak = streak
@@ -37,10 +41,29 @@ fun AppNavGraph(
         }
     }
 
+    LaunchedEffect(Unit) {
+        userViewModel.xpGainedEvent.collect { result ->
+            // Only show the big completion dialog if it's a level up
+            // Regular XP gains will be handled locally in screens (e.g., floating text)
+            if (result.isLevelUp) {
+                xpResultState = result
+            }
+        }
+    }
+
     if (showStreakDialog) {
         StreakDialog(
             streakCount = currentStreak,
             onDismiss = { showStreakDialog = false }
+        )
+    }
+
+    xpResultState?.let { result ->
+        XPCompletionDialog(
+            xpGained = result.xpGained,
+            isLevelUp = result.isLevelUp,
+            newLevel = result.newLevel,
+            onDismiss = { xpResultState = null }
         )
     }
 
@@ -119,7 +142,9 @@ fun AppNavGraph(
                 navController = navController,
                 topicId = topicId,
                 mode = mode,
-                onLessonComplete = { userViewModel.completeLesson() }
+                onLessonComplete = { id: Long, isNew: Boolean -> 
+                    userViewModel.completeLesson(id, isNew) 
+                }
             )
         }
 
@@ -136,7 +161,9 @@ fun AppNavGraph(
                 navController = navController,
                 topicId = topicId,
                 type = type,
-                onLessonComplete = { userViewModel.completeLesson() }
+                onLessonComplete = { id: Long, isNew: Boolean -> 
+                    userViewModel.completeLesson(id, isNew) 
+                }
             )
         }
 
@@ -153,12 +180,10 @@ fun AppNavGraph(
                 navController = navController,
                 topicId = topicId,
                 type = type,
-                onQuizComplete = { userViewModel.completeLesson() }
+                onQuizComplete = { id: Long, isNew: Boolean -> 
+                    userViewModel.completeLesson(id, isNew) 
+                }
             )
-        }
-        
-        composable(Routes.Splash.route) {
-            // SplashScreen(...)
         }
     }
 }

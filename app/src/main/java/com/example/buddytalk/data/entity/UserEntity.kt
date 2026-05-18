@@ -8,6 +8,7 @@ data class UserEntity(
     @PrimaryKey val id: Int = 1,
     val userName: String,
     val level: Int,
+    val totalXP: Int = 0, // Added totalXP
     val rank: String,
     val streak: Int,
     val lastStudyDate: Long? = null,

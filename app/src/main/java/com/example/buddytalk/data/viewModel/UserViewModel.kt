@@ -6,6 +6,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.buddytalk.data.database.AppDatabase
 import com.example.buddytalk.data.entity.UserEntity
+import com.example.buddytalk.data.entity.XPTransaction
+import com.example.buddytalk.data.model.LevelSystem
 import com.example.buddytalk.data.repository.UserRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -30,6 +32,10 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     private val _streakUpdatedEvent = MutableSharedFlow<Int>()
     val streakUpdatedEvent: SharedFlow<Int> = _streakUpdatedEvent.asSharedFlow()
 
+    data class XPResult(val xpGained: Int, val isLevelUp: Boolean, val newLevel: Int)
+    private val _xpGainedEvent = MutableSharedFlow<XPResult>()
+    val xpGainedEvent: SharedFlow<XPResult> = _xpGainedEvent.asSharedFlow()
+
     init {
         val userDao = AppDatabase.getDatabase(application).userDao()
         repository = UserRepository(userDao)
@@ -40,6 +46,7 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                     val defaultUser = UserEntity(
                         userName = "Anonymous",
                         level = 1,
+                        totalXP = 0,
                         rank = "Hạng I",
                         streak = 0,
                         lastStudyDate = null,
@@ -53,41 +60,58 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun completeLesson() {
+    /**
+     * @param silent If true, don't emit xpGainedEvent (used for batch card completion)
+     */
+    fun completeLesson(lessonId: Long, isNewLesson: Boolean, silent: Boolean = false) {
         viewModelScope.launch {
             val currentUser = _user.value ?: return@launch
+            if (repository.hasReceivedXP(lessonId)) return@launch
+
+            val xpGained = if (isNewLesson) 200 else 50
+            val newTotalXP = currentUser.totalXP + xpGained
+            
+            val levelInfo = LevelSystem.getLevelByXP(newTotalXP)
+            val isLevelUp = levelInfo.level > currentUser.level
+
             val now = System.currentTimeMillis()
+            var newStreak = currentUser.streak
             val lastStudy = currentUser.lastStudyDate
 
             if (lastStudy == null) {
-                // First time ever
-                updateStreak(currentUser, 1, now)
-                _streakUpdatedEvent.emit(1)
+                newStreak = 1
             } else {
                 val lastCalendar = Calendar.getInstance().apply { timeInMillis = lastStudy }
                 val nowCalendar = Calendar.getInstance().apply { timeInMillis = now }
-
-                if (isSameDay(lastCalendar, nowCalendar)) {
-                    // Already studied today, do nothing for streak count
-                    return@launch
-                }
-
-                if (isYesterday(lastCalendar, nowCalendar)) {
-                    // Consecutive day
-                    val newStreak = currentUser.streak + 1
-                    updateStreak(currentUser, newStreak, now)
-                    _streakUpdatedEvent.emit(newStreak)
-                } else {
-                    // Gap in studying, reset to 1
-                    updateStreak(currentUser, 1, now)
-                    _streakUpdatedEvent.emit(1)
+                if (!isSameDay(lastCalendar, nowCalendar)) {
+                    if (isYesterday(lastCalendar, nowCalendar)) newStreak += 1
+                    else newStreak = 1
                 }
             }
-        }
-    }
 
-    private suspend fun updateStreak(user: UserEntity, newStreak: Int, timestamp: Long) {
-        repository.updateStreak(user, newStreak, timestamp)
+            val updatedUser = currentUser.copy(
+                totalXP = newTotalXP,
+                level = levelInfo.level,
+                rank = levelInfo.badge,
+                streak = newStreak,
+                lastStudyDate = now
+            )
+
+            val transaction = XPTransaction(
+                lessonId = lessonId,
+                xpAmount = xpGained,
+                reason = if (isNewLesson) "NEW_LESSON" else "REVIEW"
+            )
+
+            repository.completeLessonWithXP(updatedUser, transaction)
+            
+            if (!silent || isLevelUp) {
+                _xpGainedEvent.emit(XPResult(xpGained, isLevelUp, levelInfo.level))
+            }
+            if (newStreak != currentUser.streak) {
+                _streakUpdatedEvent.emit(newStreak)
+            }
+        }
     }
 
     private fun isSameDay(cal1: Calendar, cal2: Calendar): Boolean {
@@ -105,9 +129,7 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
 
     fun updateUserName(newName: String) {
         viewModelScope.launch {
-            _user.value?.let {
-                repository.updateUserName(newName, it)
-            }
+            _user.value?.let { repository.updateUserName(newName, it) }
         }
     }
 
@@ -115,9 +137,7 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val localPath = saveImageToInternalStorage(uriString)
             if (localPath != null) {
-                _user.value?.let {
-                    repository.updateAvatar(localPath, it)
-                }
+                _user.value?.let { repository.updateAvatar(localPath, it) }
             }
         }
     }
@@ -129,13 +149,9 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                 val inputStream = context.contentResolver.openInputStream(uri)
                 val fileName = "user_avatar_${System.currentTimeMillis()}.jpg"
                 val file = File(context.filesDir, fileName)
-                
                 inputStream?.use { input ->
-                    FileOutputStream(file).use { output ->
-                        input.copyTo(output)
-                    }
+                    FileOutputStream(file).use { output -> input.copyTo(output) }
                 }
-                
                 file.absolutePath
             } catch (e: Exception) {
                 e.printStackTrace()

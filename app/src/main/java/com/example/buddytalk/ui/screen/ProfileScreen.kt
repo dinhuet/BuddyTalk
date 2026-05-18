@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.buddytalk.data.model.LevelSystem
 import com.example.buddytalk.data.viewModel.UserViewModel
 import com.example.buddytalk.ui.theme.*
 
@@ -55,6 +56,7 @@ fun ProfileScreen(
                 MainProfileCard(
                     level = user.level, 
                     rank = user.rank,
+                    totalXP = user.totalXP,
                     avatarUrl = user.avatarUrl
                 )
                 Spacer(modifier = Modifier.height(16.dp))
@@ -122,18 +124,20 @@ fun HeaderSection(userName: String, onSettingsClick: () -> Unit) {
 }
 
 @Composable
-fun MainProfileCard(level: Int, rank: String, avatarUrl: String?) {
+fun MainProfileCard(level: Int, rank: String, totalXP: Int, avatarUrl: String?) {
+    val xpBarData = LevelSystem.calculateXPBar(totalXP)
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
-            .height(320.dp),
+            .height(380.dp), // Increased height to accommodate XP bar
         shape = RoundedCornerShape(32.dp),
         colors = CardDefaults.cardColors(containerColor = CardBackground),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().padding(vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -176,7 +180,7 @@ fun MainProfileCard(level: Int, rank: String, avatarUrl: String?) {
                 }
             }
             
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             
             Surface(
                 shape = RoundedCornerShape(16.dp),
@@ -191,6 +195,43 @@ fun MainProfileCard(level: Int, rank: String, avatarUrl: String?) {
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(text = rank, color = ButtonYellow, fontWeight = FontWeight.Bold)
                 }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // XP Bar Section
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Kinh nghiệm",
+                        fontSize = 12.sp,
+                        color = TextGray,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "${xpBarData.xpInCurrentLevel}/${xpBarData.xpNeededForNextLevel} XP",
+                        fontSize = 12.sp,
+                        color = TextGray,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                LinearProgressIndicator(
+                    progress = { xpBarData.progressPercent },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(12.dp)
+                        .clip(RoundedCornerShape(6.dp)),
+                    color = ButtonYellow,
+                    trackColor = Color(0xFFEEEEEE),
+                )
             }
             
             Spacer(modifier = Modifier.height(24.dp))

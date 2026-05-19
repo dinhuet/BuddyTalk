@@ -32,7 +32,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.buddytalk.data.viewModel.LearningMode
 import com.example.buddytalk.data.viewModel.TopicViewModel
 import com.example.buddytalk.data.viewModel.TopicUiState
-import com.example.buddytalk.data.viewModel.TopicViewMode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,7 +44,7 @@ fun TopicScreen(
     val topics by viewModel.topicsWithCount.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val learningMode by viewModel.learningMode.collectAsState()
-    val viewMode by viewModel.viewMode.collectAsState()
+    
     val headerTitle = when (mode) {
         "practice" -> "Chủ đề luyện tập"
         "quiz" -> "Chủ đề trắc nghiệm"
@@ -179,45 +178,16 @@ fun TopicScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Danh sách",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF333333)
-                )
-                
-                // View Mode Toggle
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFF1F5F9),
-                    modifier = Modifier.height(40.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        ViewModeButton(
-                            icon = Icons.Default.GridView,
-                            isSelected = viewMode == TopicViewMode.LIST,
-                            onClick = { viewModel.onViewModeChange(TopicViewMode.LIST) }
-                        )
-                        ViewModeButton(
-                            icon = Icons.Default.AccountTree,
-                            isSelected = viewMode == TopicViewMode.TREE,
-                            onClick = { viewModel.onViewModeChange(TopicViewMode.TREE) }
-                        )
-                    }
-                }
-            }
+            Text(
+                text = "Danh sách",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF333333)
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (viewMode == TopicViewMode.LIST) {
+            if (mode == "practice" || mode == "quiz") {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(bottom = 24.dp)
@@ -236,31 +206,6 @@ fun TopicScreen(
                 )
             }
         }
-    }
-}
-
-@Composable
-fun ViewModeButton(
-    icon: ImageVector,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    Surface(
-        modifier = Modifier
-            .size(32.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(8.dp),
-        color = if (isSelected) Color.White else Color.Transparent,
-        shadowElevation = if (isSelected) 2.dp else 0.dp
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = if (isSelected) Color(0xFF2196F3) else Color.Gray,
-            modifier = Modifier
-                .padding(6.dp)
-                .size(20.dp)
-        )
     }
 }
 
@@ -295,10 +240,8 @@ fun TopicTreeItem(
     onClick: () -> Unit
 ) {
     val isLocked = topicState.topic.isLocked
-    val isCompleted = topicState.isCompleted // Should be updated in VM logic
+    val isCompleted = topicState.isCompleted
     
-    // In the image, "Động vật" is green (completed/active?), "Nghề nghiệp" is blue (current), others are grey (locked)
-    // Let's assume: Green = Completed, Blue = Next/Current, Grey = Locked
     val circleColor = when {
         isLocked -> Color(0xFFE5E7EB)
         isCompleted -> Color(0xFF10B981)

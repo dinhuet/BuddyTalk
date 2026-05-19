@@ -90,7 +90,7 @@ class TopicViewModel(application: Application) : AndroidViewModel(application) {
                                 TopicUiState(
                                     topic = topic,
                                     lessonCount = lessons.count { it.isWordLesson == targetType },
-                                    isCompleted = topic.name == "Động vật" // Giả lập trạng thái để hiển thị giống mẫu
+                                    isCompleted = topic.isCompleted
                                 )
                             }
                         }

@@ -48,6 +48,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -97,6 +98,13 @@ fun PracticePronunciationScreen(
                 playSoundInternal("doprevious")
             }
             viewModel.clearError()
+        }
+    }
+
+    // Play sound when incomplete dialog appears
+    LaunchedEffect(uiState.showIncompleteDialog) {
+        if (uiState.showIncompleteDialog) {
+            playSoundInternal("doprevious")
         }
     }
 
@@ -152,6 +160,84 @@ fun PracticePronunciationScreen(
     if (uiState.isFinished) {
         CompletionScreen(onBack = { viewModel.resetFinish(); navController.popBackStack() })
         return
+    }
+
+    // Custom 3D Dialog when topic is incomplete
+    if (uiState.showIncompleteDialog) {
+        Dialog(onDismissRequest = { viewModel.dismissIncompleteDialog() }) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp)
+            ) {
+                // Main Dialog Body
+                Surface(
+                    modifier = Modifier
+                        .padding(top = 32.dp)
+                        .fillMaxWidth(),
+                    shape = RoundedCornerShape(32.dp),
+                    color = Color(0xFFEBF8FF), // Light blue background from image
+                    border = BorderStroke(4.dp, Color.White)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .padding(top = 40.dp, bottom = 32.dp, start = 20.dp, end = 20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Chưa hoàn thành",
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF2196F3), // Bright blue title
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Bé chưa hoàn thành các câu trước. Bé có muốn tiếp tục làm không?",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1E88E5), // Blue text
+                            textAlign = TextAlign.Center,
+                            lineHeight = 26.sp
+                        )
+                        Spacer(modifier = Modifier.height(32.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            ThreeDButton(
+                                text = "Thoát",
+                                baseColor = Color(0xFFA5C8E1),
+                                shadowColor = Color(0xFF8BA9C4),
+                                textColor = Color.White,
+                                onClick = { viewModel.dismissIncompleteDialog(); navController.popBackStack() },
+                                modifier = Modifier.weight(1f)
+                            )
+                            ThreeDButton(
+                                text = "Tiếp tục làm",
+                                baseColor = Color(0xFF03A9F4),
+                                shadowColor = Color(0xFF0288D1),
+                                textColor = Color.White,
+                                onClick = { viewModel.jumpToFirstIncomplete() },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
+
+                // Star Icon with pencil & glasses (represented by emoji 🌟 for now)
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .offset(x = (-10).dp, y = (-10).dp)
+                        .size(80.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "🌟", fontSize = 60.sp)
+                    // Additional decorations can be added here
+                }
+            }
+        }
     }
 
     val currentLesson = uiState.lessons.getOrNull(uiState.currentIndex)
@@ -552,6 +638,44 @@ fun PracticePronunciationScreen(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ThreeDButton(
+    text: String,
+    baseColor: Color,
+    shadowColor: Color,
+    textColor: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .height(58.dp)
+            .clickable(onClick = onClick)
+    ) {
+        // Shadow layer
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .offset(y = 6.dp)
+                .background(shadowColor, RoundedCornerShape(29.dp))
+        )
+        // Top layer
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(baseColor, RoundedCornerShape(29.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = text,
+                color = textColor,
+                fontWeight = FontWeight.Black,
+                fontSize = 18.sp
+            )
         }
     }
 }

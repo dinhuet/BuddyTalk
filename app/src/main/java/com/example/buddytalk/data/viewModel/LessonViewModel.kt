@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.buddytalk.data.database.AppDatabase
 import com.example.buddytalk.data.entity.Lesson
 import com.example.buddytalk.data.repository.LessonRepository
-import com.example.buddytalk.data.repository.TopicRepository
 import com.example.buddytalk.data.speech.SpeechRecognitionManager
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -24,12 +23,12 @@ data class LessonUiState(
     val isCorrect: Boolean = false,
     val completedIndices: Set<Int> = emptySet(),
     val mispronouncedIndices: Set<Int> = emptySet(),
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val showIncompleteDialog: Boolean = false
 )
 
 class LessonViewModel(application: Application) : AndroidViewModel(application) {
     private val lessonRepository: LessonRepository
-    private val topicRepository: TopicRepository
     private val speechManager = SpeechRecognitionManager(application)
     
     private val _uiState = MutableStateFlow(LessonUiState())
@@ -38,7 +37,6 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
     init {
         val database = AppDatabase.getDatabase(application)
         lessonRepository = LessonRepository(database.lessonDao())
-        topicRepository = TopicRepository(database.topicDao())
         
         // Initialize Parakeet API client
         initSpeechRecognition()
@@ -180,27 +178,30 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
             } else {
                 // Ở bài cuối cùng: kiểm tra xem tất cả đã được hoàn thành chưa
                 if (state.completedIndices.size < state.lessons.size) {
-                    state.copy(errorMessage = "Bé hãy hoàn thành các bài trước nhé!")
+                    state.copy(showIncompleteDialog = true)
                 } else {
-                    // Mark topic as completed
-                    markTopicCompleted()
                     state.copy(isFinished = true, errorMessage = null)
                 }
             }
         }
     }
 
-    private fun markTopicCompleted() {
-        val lessons = _uiState.value.lessons
-        if (lessons.isNotEmpty()) {
-            val topicId = lessons.first().ref
-            viewModelScope.launch {
-                val topic = topicRepository.getTopicById(topicId)
-                topic?.let {
-                    topicRepository.updateTopic(it.copy(isCompleted = true))
-                }
-            }
+    fun jumpToFirstIncomplete() {
+        _uiState.update { state ->
+            val firstIncomplete = state.lessons.indices.firstOrNull { it !in state.completedIndices } ?: 0
+            state.copy(
+                currentIndex = firstIncomplete,
+                showIncompleteDialog = false,
+                recognizedText = "",
+                partialText = "",
+                isCorrect = false,
+                mispronouncedIndices = emptySet()
+            )
         }
+    }
+
+    fun dismissIncompleteDialog() {
+        _uiState.update { it.copy(showIncompleteDialog = false) }
     }
 
     fun previousLesson() {

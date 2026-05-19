@@ -10,5 +10,6 @@ data class Topic(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val name: String,
-    val isLocked: Boolean = false
+    val isLocked: Boolean = false,
+    val isCompleted: Boolean = false
 )

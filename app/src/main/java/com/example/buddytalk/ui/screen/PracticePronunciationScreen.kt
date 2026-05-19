@@ -156,6 +156,23 @@ fun PracticePronunciationScreen(
 
     val currentLesson = uiState.lessons.getOrNull(uiState.currentIndex)
 
+    // Persistent state for Kiki's tip
+    var showTipPersistent by remember { mutableStateOf(false) }
+
+    // Reset tip state when lesson changes
+    LaunchedEffect(uiState.currentIndex) {
+        showTipPersistent = false
+    }
+
+    // Update persistence based on recognition feedback
+    LaunchedEffect(uiState.recognizedText, uiState.isCorrect, uiState.isListening) {
+        if (uiState.isCorrect) {
+            showTipPersistent = false
+        } else if (uiState.recognizedText.isNotEmpty() && !uiState.isListening && currentLesson?.tip?.isNotEmpty() == true) {
+            showTipPersistent = true
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize().background(Color(0xFFF8FAFF))) {
         // Header
         Box(modifier = Modifier.fillMaxWidth().height(130.dp).clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)).background(brush = Brush.verticalGradient(colors = listOf(Color(0xFF2196F3), Color(0xFF64B5F6)))).padding(20.dp)) {
@@ -277,8 +294,8 @@ fun PracticePronunciationScreen(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Mẹo Kiki condition
-        val showTip = !uiState.isCorrect && uiState.recognizedText.isNotEmpty() && !uiState.isListening && (currentLesson?.tip?.isNotEmpty() == true)
+        // Mẹo Kiki condition: show if persistent and not corrected yet
+        val showTip = showTipPersistent && !uiState.isCorrect
 
         // Mic Section with Tip Card
         if (type == "vocabulary") {
@@ -346,7 +363,7 @@ fun PracticePronunciationScreen(
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                text = "👅",
+                                text = "👄",
                                 fontSize = 32.sp
                             )
                             Spacer(modifier = Modifier.height(6.dp))
@@ -417,7 +434,7 @@ fun PracticePronunciationScreen(
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Text(
-                                text = "👅",
+                                text = "👄",
                                 fontSize = 28.sp
                             )
                             Spacer(modifier = Modifier.width(10.dp))

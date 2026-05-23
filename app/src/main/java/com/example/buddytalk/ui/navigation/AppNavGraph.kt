@@ -105,7 +105,7 @@ fun AppNavGraph(
                             navController.navigate(Routes.PracticePronunciation.createRoute(topicId, learningMode.lowercase()))
                         }
                         "quiz" -> {
-                            navController.navigate(Routes.Quiz.createRoute(topicId, learningMode.lowercase()))
+                            navController.navigate(Routes.Quiz.createRoute(learningMode.lowercase()))
                         }
                         else -> {
                             navController.navigate(Routes.Lesson.createRoute(topicId, learningMode))
@@ -152,15 +152,12 @@ fun AppNavGraph(
         composable(
             Routes.Quiz.route,
             arguments = listOf(
-                navArgument("topicId") { type = NavType.LongType },
                 navArgument("type") { type = NavType.StringType }
             )
         ) { backStackEntry ->
-            val topicId = backStackEntry.arguments?.getLong("topicId") ?: 0L
             val type = backStackEntry.arguments?.getString("type") ?: "quiz_match_image"
             QuizScreen(
                 navController = navController,
-                topicId = topicId,
                 type = type,
                 onQuizComplete = { userViewModel.completeLesson() }
             )

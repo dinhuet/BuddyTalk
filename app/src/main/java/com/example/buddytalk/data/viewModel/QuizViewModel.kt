@@ -6,10 +6,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.buddytalk.data.database.AppDatabase
 import com.example.buddytalk.data.entity.Lesson
 import com.example.buddytalk.data.repository.LessonRepository
+import com.example.buddytalk.data.repository.TopicRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -22,6 +23,7 @@ data class QuizUiState(
 
 class QuizViewModel(application: Application) : AndroidViewModel(application) {
     private val lessonRepository: LessonRepository
+    private val topicRepository: TopicRepository
 
     private val _uiState = MutableStateFlow(QuizUiState())
     val uiState: StateFlow<QuizUiState> = _uiState.asStateFlow()
@@ -29,12 +31,24 @@ class QuizViewModel(application: Application) : AndroidViewModel(application) {
     init {
         val database = AppDatabase.getDatabase(application)
         lessonRepository = LessonRepository(database.lessonDao())
+        topicRepository = TopicRepository(database.topicDao())
     }
 
-    fun loadLessons(topicId: Long, targetType: Int) {
+    fun loadLessons(targetType: Int) {
         viewModelScope.launch {
-            lessonRepository.getLessonsByTopicId(topicId)
-                .map { lessons -> lessons.filter { it.isWordLesson == targetType } }
+            combine(
+                topicRepository.allTopics,
+                lessonRepository.getAllLessons()
+            ) { topics, lessons ->
+                val unlockedTopicIds = topics
+                    .filter { !it.isLocked }
+                    .map { it.id }
+                    .toSet()
+
+                lessons
+                    .filter { it.ref in unlockedTopicIds && it.isWordLesson == targetType }
+                    .shuffled()
+            }
                 .collect { filteredLessons ->
                     _uiState.update {
                         it.copy(

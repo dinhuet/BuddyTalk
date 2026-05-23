@@ -6,6 +6,9 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface LessonDao {
+    @Query("SELECT * FROM lessons")
+    fun getAllLessons(): Flow<List<Lesson>>
+
     @Query("SELECT * FROM lessons WHERE ref = :topicId")
     fun getLessonsByTopicId(topicId: Long): Flow<List<Lesson>>
 

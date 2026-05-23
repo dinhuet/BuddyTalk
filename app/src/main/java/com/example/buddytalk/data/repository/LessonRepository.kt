@@ -5,6 +5,8 @@ import com.example.buddytalk.data.entity.Lesson
 import kotlinx.coroutines.flow.Flow
 
 class LessonRepository(private val lessonDao: LessonDao) {
+    fun getAllLessons(): Flow<List<Lesson>> = lessonDao.getAllLessons()
+
     fun getLessonsByTopicId(topicId: Long): Flow<List<Lesson>> = lessonDao.getLessonsByTopicId(topicId)
 
     suspend fun getLessonById(id: Long): Lesson? = lessonDao.getLessonById(id)

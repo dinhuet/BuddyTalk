@@ -4,9 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -79,14 +79,14 @@ fun QuizMenuScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Row(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 QuizModeCard(
                     label = "Ghép",
                     accent = Color(0xFF8CCBFF),
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                     onClick = { navController.navigate(Routes.Quiz.createRoute("quiz_match_image")) }
                 ) {
                     Icon(Icons.Default.TextFields, contentDescription = null, tint = Color(0xFF0F4C81), modifier = Modifier.size(26.dp))
@@ -96,7 +96,7 @@ fun QuizMenuScreen(navController: NavController) {
                 QuizModeCard(
                     label = "Nghe chữ",
                     accent = Color(0xFF7CC7FF),
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                     onClick = { navController.navigate(Routes.Quiz.createRoute("quiz_audio_word")) }
                 ) {
                     Icon(Icons.Default.Hearing, contentDescription = null, tint = Color(0xFF0B5CAD), modifier = Modifier.size(28.dp))
@@ -106,7 +106,7 @@ fun QuizMenuScreen(navController: NavController) {
                 QuizModeCard(
                     label = "Nghe hình",
                     accent = Color(0xFF8DE0B8),
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                     onClick = { navController.navigate(Routes.Quiz.createRoute("quiz_audio_image")) }
                 ) {
                     Icon(Icons.Default.Hearing, contentDescription = null, tint = Color(0xFF0F7A4A), modifier = Modifier.size(28.dp))
@@ -170,17 +170,17 @@ private fun QuizModeCard(
     accent: Color,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
-    iconContent: @Composable ColumnScope.() -> Unit
+    iconContent: @Composable RowScope.() -> Unit
 ) {
     Surface(
         modifier = modifier
-            .height(190.dp)
+            .height(104.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(28.dp),
         color = Color.White,
         shadowElevation = 4.dp
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
@@ -188,26 +188,30 @@ private fun QuizModeCard(
                         colors = listOf(accent.copy(alpha = 0.28f), Color.White)
                     )
                 )
-                .padding(vertical = 18.dp, horizontal = 10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
         ) {
             Surface(
                 shape = RoundedCornerShape(22.dp),
                 color = Color.White.copy(alpha = 0.88f)
             ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                     content = iconContent
                 )
             }
 
+            Spacer(modifier = Modifier.width(16.dp))
+
             Text(
                 text = label,
+                modifier = Modifier.weight(1f),
                 color = Color(0xFF1F2937),
-                fontSize = 15.sp,
+                fontSize = 18.sp,
+                lineHeight = 22.sp,
                 fontWeight = FontWeight.ExtraBold
             )
         }

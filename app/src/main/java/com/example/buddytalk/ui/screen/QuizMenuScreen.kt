@@ -122,7 +122,7 @@ private fun QuizMenuHeader(onBack: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(160.dp)
+            .height(116.dp)
             .clip(RoundedCornerShape(bottomStart = 36.dp, bottomEnd = 36.dp))
             .background(
                 brush = Brush.verticalGradient(
@@ -154,9 +154,9 @@ private fun QuizMenuHeader(onBack: () -> Unit) {
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Chọn thật nhanh",
+                    text = "Cùng chơi nào",
                     color = Color.White,
-                    fontSize = 22.sp,
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.ExtraBold
                 )
             }

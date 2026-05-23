@@ -1,12 +1,12 @@
 package com.example.buddytalk.ui.screen
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,6 +19,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.Hearing
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
@@ -51,48 +55,64 @@ fun QuizMenuScreen(navController: NavController) {
         ) {
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text(
-                text = "Chọn loại trắc nghiệm",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF333333)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            QuizMenuItem(
-                title = "Trắc nghiệm ghép từ ngữ và hình ảnh",
-                subtitle = "Chọn đúng hình cho từ vựng",
-                icon = "🧩",
-                color = Color(0xFFF59E0B),
-                onClick = {
-                    navController.navigate(Routes.Topics.createRoute("quiz", "quiz_match_image"))
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = Color.White
+            ) {
+                Column(
+                    modifier = Modifier.padding(18.dp)
+                ) {
+                    Text(
+                        text = "Bé muốn chơi kiểu nào?",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFF1F2937)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Câu hỏi sẽ được lấy ngẫu nhiên từ các bài đã mở.",
+                        fontSize = 13.sp,
+                        color = Color(0xFF6B7280)
+                    )
                 }
-            )
+            }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            QuizMenuItem(
-                title = "Trắc nghiệm nghe audio -> Chọn từ ngữ",
-                subtitle = "Nghe và chọn đúng chữ",
-                icon = "🎧",
-                color = Color(0xFF2563EB),
-                onClick = {
-                    navController.navigate(Routes.Topics.createRoute("quiz", "quiz_audio_word"))
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                QuizModeCard(
+                    label = "Ghép",
+                    accent = Color(0xFF8CCBFF),
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { navController.navigate(Routes.Quiz.createRoute("quiz_match_image")) }
+                ) {
+                    Icon(Icons.Default.TextFields, contentDescription = null, tint = Color(0xFF0F4C81), modifier = Modifier.size(26.dp))
+                    Icon(Icons.Default.GridView, contentDescription = null, tint = Color(0xFF0F4C81), modifier = Modifier.size(30.dp))
                 }
-            )
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            QuizMenuItem(
-                title = "Trắc nghiệm nghe audio -> Chọn hình ảnh",
-                subtitle = "Nghe và chọn đúng hình",
-                icon = "🖼️",
-                color = Color(0xFF10B981),
-                onClick = {
-                    navController.navigate(Routes.Topics.createRoute("quiz", "quiz_audio_image"))
+                QuizModeCard(
+                    label = "Nghe chữ",
+                    accent = Color(0xFF7CC7FF),
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { navController.navigate(Routes.Quiz.createRoute("quiz_audio_word")) }
+                ) {
+                    Icon(Icons.Default.Hearing, contentDescription = null, tint = Color(0xFF0B5CAD), modifier = Modifier.size(28.dp))
+                    Icon(Icons.Default.TextFields, contentDescription = null, tint = Color(0xFF0B5CAD), modifier = Modifier.size(24.dp))
                 }
-            )
+
+                QuizModeCard(
+                    label = "Nghe hình",
+                    accent = Color(0xFF8DE0B8),
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { navController.navigate(Routes.Quiz.createRoute("quiz_audio_image")) }
+                ) {
+                    Icon(Icons.Default.Hearing, contentDescription = null, tint = Color(0xFF0F7A4A), modifier = Modifier.size(28.dp))
+                    Icon(Icons.Default.Image, contentDescription = null, tint = Color(0xFF0F7A4A), modifier = Modifier.size(24.dp))
+                }
+            }
         }
     }
 }
@@ -102,8 +122,8 @@ private fun QuizMenuHeader(onBack: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(140.dp)
-            .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
+            .height(116.dp)
+            .clip(RoundedCornerShape(bottomStart = 36.dp, bottomEnd = 36.dp))
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(Color(0xFF2196F3), Color(0xFF64B5F6))
@@ -120,8 +140,8 @@ private fun QuizMenuHeader(onBack: () -> Unit) {
             IconButton(
                 onClick = onBack,
                 modifier = Modifier
-                    .size(40.dp)
-                    .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                    .size(42.dp)
+                    .background(Color.White.copy(alpha = 0.22f), CircleShape)
             ) {
                 Icon(Icons.Default.ChevronLeft, contentDescription = "Back", tint = Color.White)
             }
@@ -129,15 +149,15 @@ private fun QuizMenuHeader(onBack: () -> Unit) {
             Column {
                 Text(
                     text = "TRẮC NGHIỆM",
-                    color = Color.White.copy(alpha = 0.8f),
+                    color = Color.White.copy(alpha = 0.9f),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Chọn hình thức",
+                    text = "Cùng chơi nào",
                     color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.ExtraBold
                 )
             }
         }
@@ -145,53 +165,55 @@ private fun QuizMenuHeader(onBack: () -> Unit) {
 }
 
 @Composable
-private fun QuizMenuItem(
-    title: String,
-    subtitle: String,
-    icon: String,
-    color: Color,
-    onClick: () -> Unit
+private fun QuizModeCard(
+    label: String,
+    accent: Color,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+    iconContent: @Composable RowScope.() -> Unit
 ) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(110.dp)
+        modifier = modifier
+            .height(104.dp)
             .clickable { onClick() },
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(28.dp),
         color = Color.White,
-        border = BorderStroke(2.dp, color.copy(alpha = 0.5f))
+        shadowElevation = 4.dp
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 20.dp)
-                .fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxSize()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(accent.copy(alpha = 0.28f), Color.White)
+                    )
+                )
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .size(60.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(color.copy(alpha = 0.12f)),
-                contentAlignment = Alignment.Center
+            Surface(
+                shape = RoundedCornerShape(22.dp),
+                color = Color.White.copy(alpha = 0.88f)
             ) {
-                Text(icon, fontSize = 28.sp)
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    content = iconContent
+                )
             }
+
             Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1F2937)
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = subtitle,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = color
-                )
-            }
+
+            Text(
+                text = label,
+                modifier = Modifier.weight(1f),
+                color = Color(0xFF1F2937),
+                fontSize = 18.sp,
+                lineHeight = 22.sp,
+                fontWeight = FontWeight.ExtraBold
+            )
         }
     }
 }

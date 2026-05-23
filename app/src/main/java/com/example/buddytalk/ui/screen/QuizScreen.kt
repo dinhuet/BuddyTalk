@@ -14,21 +14,28 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ErrorOutline
-import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.Hearing
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -78,7 +85,6 @@ enum class QuizType {
 @Composable
 fun QuizScreen(
     navController: NavController,
-    topicId: Long,
     type: String,
     viewModel: QuizViewModel = viewModel(),
     onQuizComplete: () -> Unit = {}
@@ -116,13 +122,13 @@ fun QuizScreen(
         }
     }
 
-    LaunchedEffect(topicId, quizType) {
+    LaunchedEffect(quizType) {
         val targetType = when (quizType) {
             QuizType.MATCH_IMAGE -> 0
             QuizType.AUDIO_WORD -> 1
             QuizType.AUDIO_IMAGE -> 0
         }
-        viewModel.loadLessons(topicId, targetType)
+        viewModel.loadLessons(targetType)
     }
 
     LaunchedEffect(uiState.currentIndex, uiState.lessons, quizType) {
@@ -156,7 +162,7 @@ fun QuizScreen(
 
     if (uiState.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+            CircularProgressIndicator(color = Color(0xFF2196F3))
         }
         return
     }
@@ -178,25 +184,36 @@ fun QuizScreen(
     val options = remember(currentLesson.id, uiState.lessons) {
         buildOptions(uiState.lessons, currentLesson, 4)
     }
+    val progress = ((uiState.currentIndex + 1).toFloat() / uiState.lessons.size.coerceAtLeast(1))
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F9FF))
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color(0xFFF5F9FF), Color(0xFFEAF4FF))
+                )
+            )
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             QuizHeader(
                 title = quizHeaderTitle(quizType),
-                progress = "${uiState.currentIndex + 1}/${uiState.lessons.size}",
+                progressText = "${uiState.currentIndex + 1}/${uiState.lessons.size}",
+                progressValue = progress,
                 onBack = { navController.popBackStack() }
             )
-
-            Spacer(modifier = Modifier.height(20.dp))
 
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 24.dp)
+                    .padding(horizontal = 20.dp, vertical = 18.dp)
+                    .then(
+                        if (quizType == QuizType.AUDIO_IMAGE) {
+                            Modifier.navigationBarsPadding()
+                        } else {
+                            Modifier
+                        }
+                    )
             ) {
                 QuizPrompt(
                     quizType = quizType,
@@ -213,7 +230,7 @@ fun QuizScreen(
                     }
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
                 QuizOptionsGrid(
                     quizType = quizType,
@@ -237,119 +254,193 @@ fun QuizScreen(
 }
 
 @Composable
-private fun QuizHeader(title: String, progress: String, onBack: () -> Unit) {
+private fun QuizHeader(
+    title: String,
+    progressText: String,
+    progressValue: Float,
+    onBack: () -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(120.dp)
-            .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
+            .clip(RoundedCornerShape(bottomStart = 34.dp, bottomEnd = 34.dp))
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(Color(0xFF2196F3), Color(0xFF64B5F6))
                 )
             )
-            .padding(horizontal = 20.dp, vertical = 16.dp)
+            .padding(horizontal = 20.dp, vertical = 18.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(
-                onClick = onBack,
+        Column {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier
+                        .size(42.dp)
+                        .background(Color.White.copy(alpha = 0.22f), CircleShape)
+                ) {
+                    Icon(Icons.Default.ChevronLeft, contentDescription = "Back", tint = Color.White)
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "TRẮC NGHIỆM",
+                        color = Color.White.copy(alpha = 0.9f),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = title,
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White.copy(alpha = 0.26f)
+                ) {
+                    Text(
+                        text = progressText,
+                        color = Color.White,
+                        fontWeight = FontWeight.ExtraBold,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            LinearProgressIndicator(
+                progress = { progressValue },
                 modifier = Modifier
-                    .size(40.dp)
-                    .background(Color.White.copy(alpha = 0.2f), CircleShape)
-            ) {
-                Icon(Icons.Default.ChevronLeft, contentDescription = "Back", tint = Color.White)
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "TRẮC NGHIỆM",
-                    color = Color.White.copy(alpha = 0.8f),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = title,
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = Color.White.copy(alpha = 0.2f)
-            ) {
-                Text(
-                    text = progress,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                )
-            }
+                    .fillMaxWidth()
+                    .height(10.dp)
+                    .clip(RoundedCornerShape(999.dp)),
+                color = Color.White,
+                trackColor = Color.White.copy(alpha = 0.28f)
+            )
         }
     }
 }
 
 @Composable
 private fun QuizPrompt(quizType: QuizType, word: String, onReplay: () -> Unit) {
-    when (quizType) {
-        QuizType.MATCH_IMAGE -> {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp),
-                shape = RoundedCornerShape(24.dp),
-                color = Color.White,
-                border = BorderStroke(2.dp, Color(0xFFE3F2FD))
+    val accent = when (quizType) {
+        QuizType.MATCH_IMAGE -> Color(0xFF4DA3FF)
+        QuizType.AUDIO_WORD -> Color(0xFF3D8BFF)
+        QuizType.AUDIO_IMAGE -> Color(0xFF2F80ED)
+    }
+    val icon = when (quizType) {
+        QuizType.MATCH_IMAGE -> Icons.Default.GridView
+        QuizType.AUDIO_WORD -> Icons.Default.TextFields
+        QuizType.AUDIO_IMAGE -> Icons.Default.Image
+    }
+    val helper = when (quizType) {
+        QuizType.MATCH_IMAGE -> "Chạm vào hình đúng với từ này"
+        QuizType.AUDIO_WORD -> "Nghe kỹ rồi chọn chữ đúng"
+        QuizType.AUDIO_IMAGE -> "Nghe kỹ rồi chọn hình đúng"
+    }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = if (quizType == QuizType.AUDIO_IMAGE) 120.dp else 0.dp),
+        shape = RoundedCornerShape(28.dp),
+        color = Color.White,
+        shadowElevation = 3.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(contentAlignment = Alignment.Center) {
+                Surface(
+                    shape = CircleShape,
+                    color = accent.copy(alpha = 0.18f)
+                ) {
+                    Box(
+                        modifier = Modifier.size(48.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(24.dp))
+                    }
+                }
+                if (quizType != QuizType.MATCH_IMAGE) {
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Surface(
+                        shape = CircleShape,
+                        color = accent.copy(alpha = 0.14f)
+                    ) {
+                        Box(
+                            modifier = Modifier.size(48.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Hearing, contentDescription = null, tint = accent, modifier = Modifier.size(24.dp))
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(if (quizType == QuizType.AUDIO_IMAGE) 8.dp else 12.dp))
+
+            Text(
+                text = helper,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF374151)
+            )
+
+            Spacer(modifier = Modifier.height(if (quizType == QuizType.AUDIO_IMAGE) 8.dp else 14.dp))
+
+            if (quizType == QuizType.MATCH_IMAGE) {
+                Surface(
+                    shape = RoundedCornerShape(22.dp),
+                    color = Color(0xFFFFF7E7),
+                    border = BorderStroke(1.dp, accent.copy(alpha = 0.25f))
+                ) {
                     Text(
-                        text = word.uppercase(),
-                        fontSize = 36.sp,
+                    text = word.uppercase(),
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                        fontSize = 32.sp,
                         fontWeight = FontWeight.Black,
                         color = Color(0xFF1E3A8A),
                         textAlign = TextAlign.Center
                     )
                 }
-            }
-        }
-        QuizType.AUDIO_WORD, QuizType.AUDIO_IMAGE -> {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(140.dp),
-                shape = RoundedCornerShape(24.dp),
-                color = Color.White,
-                border = BorderStroke(2.dp, Color(0xFFE3F2FD))
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
+            } else {
+                Surface(
+                    modifier = Modifier.size(74.dp),
+                    shape = CircleShape,
+                    color = accent.copy(alpha = 0.18f)
                 ) {
-                    Text(
-                        text = if (quizType == QuizType.AUDIO_WORD) "Nghe và chọn từ đúng" else "Nghe và chọn hình đúng",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1F2937)
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Surface(
-                        modifier = Modifier.size(64.dp),
-                        shape = CircleShape,
-                        color = Color(0xFFDBEAFE)
-                    ) {
-                        IconButton(onClick = onReplay) {
-                            Icon(
-                                Icons.Default.VolumeUp,
-                                contentDescription = "Replay",
-                                tint = Color(0xFF2563EB),
-                                modifier = Modifier.size(30.dp)
-                            )
-                        }
+                    IconButton(onClick = onReplay) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.VolumeUp,
+                            contentDescription = "Replay",
+                            tint = accent,
+                            modifier = Modifier.size(34.dp)
+                        )
                     }
+                }
+
+                if (quizType != QuizType.AUDIO_IMAGE) {
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Text(
+                        text = "Bấm loa để nghe lại",
+                        fontSize = 13.sp,
+                        color = Color(0xFF6B7280)
+                    )
                 }
             }
         }
@@ -410,7 +501,12 @@ private fun QuizImageOption(
     val borderColor = when {
         isSelected && isCorrect == true -> Color(0xFF22C55E)
         isSelected && isCorrect == false -> Color(0xFFEF4444)
-        else -> Color(0xFFE5E7EB)
+        else -> Color(0xFFE8ECF4)
+    }
+    val backgroundColor = when {
+        isSelected && isCorrect == true -> Color(0xFFF0FDF4)
+        isSelected && isCorrect == false -> Color(0xFFFFF1F2)
+        else -> Color.White
     }
     val imageName = "image${lesson.id}"
     val imageRes = getDrawableId(context, imageName)
@@ -420,9 +516,10 @@ private fun QuizImageOption(
         modifier = modifier
             .aspectRatio(1f)
             .clickable(enabled = isCorrect == null, onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
-        color = Color.White,
-        border = BorderStroke(2.dp, borderColor)
+        shape = RoundedCornerShape(24.dp),
+        color = backgroundColor,
+        border = BorderStroke(2.dp, borderColor),
+        shadowElevation = 2.dp
     ) {
         Image(
             painter = painterResource(id = if (finalImageRes != 0) finalImageRes else R.drawable.ic_launcher_foreground),
@@ -444,21 +541,31 @@ private fun QuizWordOption(
     val borderColor = when {
         isSelected && isCorrect == true -> Color(0xFF22C55E)
         isSelected && isCorrect == false -> Color(0xFFEF4444)
-        else -> Color(0xFFE5E7EB)
+        else -> Color(0xFFE8ECF4)
     }
+    val backgroundColor = when {
+        isSelected && isCorrect == true -> Color(0xFFF0FDF4)
+        isSelected && isCorrect == false -> Color(0xFFFFF1F2)
+        else -> Color.White
+    }
+
     Surface(
         modifier = modifier
-            .height(90.dp)
+            .height(102.dp)
             .clickable(enabled = isCorrect == null, onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
-        color = Color.White,
-        border = BorderStroke(2.dp, borderColor)
+        shape = RoundedCornerShape(24.dp),
+        color = backgroundColor,
+        border = BorderStroke(2.dp, borderColor),
+        shadowElevation = 2.dp
     ) {
-        Box(contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
+            contentAlignment = Alignment.Center
+        ) {
             Text(
                 text = lesson.word.uppercase(),
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.ExtraBold,
                 color = Color(0xFF1F2937),
                 textAlign = TextAlign.Center
             )
@@ -468,26 +575,26 @@ private fun QuizWordOption(
 
 @Composable
 private fun ResultOverlay(isSuccess: Boolean) {
-    val accent = if (isSuccess) Color(0xFF22C55E) else Color(0xFFEF4444)
+    val accent = if (isSuccess) Color(0xFF22C55E) else Color(0xFFF87171)
     val soft = if (isSuccess) Color(0xFFECFDF3) else Color(0xFFFFF1F2)
-    val title = if (isSuccess) "Chính xác" else "Chưa đúng"
-    val subtitle = if (isSuccess) "Bé làm rất tốt!" else "Thử lại nhé!"
+    val title = if (isSuccess) "Đúng rồi!" else "Chưa đúng"
+    val subtitle = if (isSuccess) "Bé chọn rất giỏi." else "Mình thử câu tiếp theo nhé."
     val icon = if (isSuccess) Icons.Default.CheckCircle else Icons.Default.ErrorOutline
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.22f)),
+            .background(Color.Black.copy(alpha = 0.18f)),
         contentAlignment = Alignment.Center
     ) {
         Surface(
-            shape = RoundedCornerShape(28.dp),
+            shape = RoundedCornerShape(30.dp),
             color = Color.White,
             shadowElevation = 10.dp,
-            border = BorderStroke(1.dp, accent.copy(alpha = 0.25f))
+            border = BorderStroke(1.dp, accent.copy(alpha = 0.24f))
         ) {
             Column(
-                modifier = Modifier.padding(horizontal = 28.dp, vertical = 22.dp),
+                modifier = Modifier.padding(horizontal = 30.dp, vertical = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Surface(
@@ -495,14 +602,14 @@ private fun ResultOverlay(isSuccess: Boolean) {
                     color = soft
                 ) {
                     Box(
-                        modifier = Modifier.size(64.dp),
+                        modifier = Modifier.size(68.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = icon,
                             contentDescription = null,
                             tint = accent,
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(38.dp)
                         )
                     }
                 }
@@ -530,13 +637,20 @@ private fun EmptyQuizState(onBack: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(Color(0xFFFFFBF6))
+            .background(Color(0xFFF5F9FF))
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(text = "Không có câu hỏi phù hợp", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(16.dp))
+        Text(text = "Chưa có đủ câu hỏi", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1F2937))
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Quiz chỉ lấy từ các bài đang mở.",
+            fontSize = 14.sp,
+            color = Color(0xFF6B7280)
+        )
+        Spacer(modifier = Modifier.height(18.dp))
         Button(
             onClick = onBack,
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))
@@ -555,9 +669,8 @@ private fun buildOptions(allLessons: List<Lesson>, current: Lesson, targetSize: 
 
 private fun quizHeaderTitle(quizType: QuizType): String {
     return when (quizType) {
-        QuizType.MATCH_IMAGE -> "Ghép từ ngữ và hình ảnh"
-        QuizType.AUDIO_WORD -> "Nghe audio -> Chọn từ ngữ"
-        QuizType.AUDIO_IMAGE -> "Nghe audio -> Chọn hình ảnh"
+        QuizType.MATCH_IMAGE -> "Ghép hình"
+        QuizType.AUDIO_WORD -> "Nghe chọn chữ"
+        QuizType.AUDIO_IMAGE -> "Nghe chọn hình"
     }
 }
-

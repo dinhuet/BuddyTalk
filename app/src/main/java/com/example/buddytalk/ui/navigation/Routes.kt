@@ -22,7 +22,7 @@ sealed class Routes(val route: String) {
     object Lesson : Routes("lesson/{topicId}/{mode}") {
         fun createRoute(topicId: Long, mode: String) = "lesson/$topicId/$mode"
     }
-    object Quiz : Routes("quiz/{topicId}/{type}") {
-        fun createRoute(topicId: Long, type: String) = "quiz/$topicId/$type"
+    object Quiz : Routes("quiz/{type}") {
+        fun createRoute(type: String) = "quiz/$type"
     }
 }

@@ -156,9 +156,9 @@ fun AnalyticsScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            BadgeItem("Chuỗi 7", "🏆", Color(0xFFFEF9C3))
-            BadgeItem("Cú đêm", "🦉", Color(0xFFF3E8FF))
-            BadgeItem("Điểm tuyệt đối", "🎯", Color(0xFFDCFCE7))
+            BadgeItem("Chuỗi 7", "🏆", Color(0xFFFEF9C3), isLocked = true)
+            BadgeItem("Cú đêm", "🦉", Color(0xFFF3E8FF), isLocked = true)
+            BadgeItem("Điểm tuyệt đối", "🎯", Color(0xFFDCFCE7), isLocked = true)
             BadgeItem("Chuỗi...", "🔒", Color(0xFFF3F4F6), isLocked = true)
         }
 
@@ -296,6 +296,9 @@ fun HistoryChart(
 
 @Composable
 fun BadgeItem(name: String, icon: String, bgColor: Color, isLocked: Boolean = false) {
+    val circleColor = if (isLocked) Color(0xFFE5E7EB) else bgColor
+    val iconAlpha = if (isLocked) 0.35f else 1f
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(80.dp)
@@ -304,12 +307,13 @@ fun BadgeItem(name: String, icon: String, bgColor: Color, isLocked: Boolean = fa
             modifier = Modifier
                 .size(64.dp)
                 .clip(CircleShape)
-                .background(bgColor),
+                .background(circleColor),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = icon,
-                fontSize = 32.sp
+                fontSize = 32.sp,
+                color = Color.Black.copy(alpha = iconAlpha)
             )
         }
         Spacer(modifier = Modifier.height(8.dp))

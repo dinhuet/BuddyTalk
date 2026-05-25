@@ -17,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -123,7 +124,7 @@ private fun HeaderSection(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                color = Color(0xFF0061A4),
+                brush = Brush.verticalGradient(listOf(Color(0xFF2196F3), Color(0xFF64B5F6))),
                 shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
             )
     ) {

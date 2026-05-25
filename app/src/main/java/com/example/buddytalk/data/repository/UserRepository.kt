@@ -26,4 +26,19 @@ class UserRepository(private val userDao: UserDao) {
             lastStudyDate = lastStudyDate
         ))
     }
+
+    suspend fun updateUserAfterExercise(currentUser: UserEntity, newStreak: Int, lastStudyDate: Long) {
+        userDao.insertUser(currentUser.copy(
+            streak = newStreak,
+            exerciseCount = currentUser.exerciseCount + 1,
+            lastStudyDate = lastStudyDate
+        ))
+    }
+
+    suspend fun incrementCounter(currentUser: UserEntity, isLesson: Boolean) {
+        userDao.insertUser(currentUser.copy(
+            lessonCount = if (isLesson) currentUser.lessonCount + 1 else currentUser.lessonCount,
+            exerciseCount = if (!isLesson) currentUser.exerciseCount + 1 else currentUser.exerciseCount
+        ))
+    }
 }

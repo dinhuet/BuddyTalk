@@ -4,7 +4,10 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -14,131 +17,68 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.buddytalk.data.viewModel.HomeViewModel
 import com.example.buddytalk.data.viewModel.UserViewModel
 import com.example.buddytalk.ui.navigation.Routes
-import com.example.buddytalk.ui.theme.HeaderBlue
 
 @Composable
 fun HomeScreen(
     navController: NavController,
-    userViewModel: UserViewModel,
-    viewModel: HomeViewModel = viewModel()
+    userViewModel: UserViewModel
 ) {
-    val uiState by viewModel.uiState.collectAsState()
     val user by userViewModel.user.collectAsState()
+    val lessonCount = user?.lessonCount ?: 0
+    val exerciseCount = user?.exerciseCount ?: 0
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .background(Color.White)
-            .padding(horizontal = 24.dp)
     ) {
+        HeaderSection(
+            onLearnNow = { navController.navigate(Routes.Topics.createRoute("learn")) }
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "Tiến độ của bé",
+            modifier = Modifier.padding(horizontal = 24.dp),
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF333333)
+        )
+
         Spacer(modifier = Modifier.height(16.dp))
-        
-        // Top Bar
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(HeaderBlue),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("B", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = "BuddyTalk",
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
-            }
-            
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color(0xFFFFF5F5),
-                    border = BorderStroke(1.dp, Color(0xFFFFE0E0))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("🔥", fontSize = 16.sp)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "${user?.streak ?: 0}",
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFFF4B4B)
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Icon(
-                    Icons.Default.NotificationsNone,
-                    contentDescription = null,
-                    tint = Color.Gray,
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-        }
 
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Greeting
         Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.padding(horizontal = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = uiState.greeting,
-                color = Color.Gray,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 2.sp
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Hôm nay bạn muốn làm\ngì?",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Black,
-                color = Color(0xFF333333),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                lineHeight = 36.sp
-            )
-        }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Action Grid
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                IconCard(
-                    icon = "📚",
-                    color = Color(0xFF2196F3),
+                ProgressCard(
+                    icon = Icons.Default.AutoStories,
+                    title = "$lessonCount Bài học",
+                    accentColor = Color(0xFF4C84FF),
+                    progressFraction = (lessonCount / 10f).coerceAtMost(1f),
                     modifier = Modifier.weight(1f),
                     onClick = { navController.navigate(Routes.Topics.createRoute("learn")) }
                 )
-                IconCard(
-                    icon = "🎯",
-                    color = Color(0xFFA855F7),
+                ProgressCard(
+                    icon = Icons.Default.Edit,
+                    title = "$exerciseCount Bài tập",
+                    accentColor = Color(0xFF15B299),
+                    progressFraction = (exerciseCount / 10f).coerceAtMost(1f),
                     modifier = Modifier.weight(1f),
                     onClick = { navController.navigate(Routes.Topics.createRoute("practice")) }
                 )
@@ -147,87 +87,265 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                IconCard(
-                    icon = "🧩",
-                    color = Color(0xFFF59E0B),
+                ProgressCard(
+                    icon = Icons.Default.Extension,
+                    title = "Cấp 1",
+                    accentColor = Color(0xFF0191D8),
+                    starCount = 1,
                     modifier = Modifier.weight(1f),
                     onClick = { navController.navigate(Routes.QuizMenu.route) }
                 )
-                IconCard(
-                    icon = "📊",
-                    color = Color(0xFF10B981),
+                ProgressCard(
+                    icon = Icons.Default.Diamond,
+                    title = "Thống kê",
+                    accentColor = Color(0xFF7D7AFF),
+                    starCount = 0,
                     modifier = Modifier.weight(1f),
                     onClick = { navController.navigate(Routes.Analytics.route) }
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        DailyMissionItem()
+        DailyChallengeBanner(
+            modifier = Modifier.padding(horizontal = 24.dp)
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
 @Composable
-fun IconCard(
-    icon: String,
-    color: Color,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
+private fun HeaderSection(
+    onLearnNow: () -> Unit
 ) {
-    Surface(
-        modifier = modifier
-            .aspectRatio(1f)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(24.dp),
-        color = color.copy(alpha = 0.25f),
-        border = BorderStroke(1.5.dp, color.copy(alpha = 0.5f)),
-        shadowElevation = 0.dp
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                brush = Brush.verticalGradient(listOf(Color(0xFF2196F3), Color(0xFF64B5F6))),
+                shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
+            )
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
                 modifier = Modifier
-                    .size(72.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(Color.White),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(icon, fontSize = 36.sp)
+                Surface(
+                    shape = CircleShape,
+                    color = Color.White.copy(alpha = 0.2f),
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Default.Star,
+                            contentDescription = null,
+                            tint = Color(0xFFFFD54F),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Buddy's World",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Icon(
+                    Icons.Default.Settings,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.8f),
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Icon(
+                    Icons.Default.AccountCircle,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    modifier = Modifier.size(72.dp),
+                    shape = CircleShape,
+                    color = Color.White.copy(alpha = 0.2f)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text("🐼", fontSize = 36.sp)
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White,
+                    shadowElevation = 4.dp
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = "Chào bé! Hôm nay mình\ncùng học tiếng Việt nhé!",
+                            fontSize = 13.sp,
+                            color = Color(0xFF444444),
+                            lineHeight = 18.sp
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Surface(
+                            modifier = Modifier.clickable { onLearnNow() },
+                            shape = RoundedCornerShape(20.dp),
+                            color = Color(0xFF4C84FF)
+                        ) {
+                            Text(
+                                text = "▶  HỌC NGAY",
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
+                        }
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-fun DailyMissionItem() {
+private fun ProgressCard(
+    icon: ImageVector,
+    title: String,
+    accentColor: Color,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+    progressFraction: Float? = null,
+    starCount: Int? = null
+) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier
+            .aspectRatio(1f)
+            .clickable { onClick() },
         shape = RoundedCornerShape(20.dp),
-        color = Color(0xFFFFF7ED),
-        border = BorderStroke(1.dp, Color(0xFFFFE0B0))
+        color = Color.White,
+        border = BorderStroke(1.5.dp, accentColor.copy(alpha = 0.6f)),
+        shadowElevation = 2.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = accentColor,
+                modifier = Modifier.size(28.dp)
+            )
+
+            Text(
+                text = title.uppercase(),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFF222222)
+            )
+
+            if (starCount != null) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    repeat(3) { index ->
+                        Icon(
+                            Icons.Default.Star,
+                            contentDescription = null,
+                            tint = if (index < starCount) Color(0xFFFFB300) else Color(0xFFE0E0E0),
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+            } else if (progressFraction != null) {
+                LinearProgressIndicator(
+                    progress = { progressFraction },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    color = accentColor,
+                    trackColor = accentColor.copy(alpha = 0.15f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DailyChallengeBanner(modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = Color(0xFFEBF2FF),
+        border = BorderStroke(1.dp, Color(0xFFD0E1FF))
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 20.dp, vertical = 14.dp)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("🎁", fontSize = 22.sp)
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(Color(0xFF0174BE), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.CardGiftcard,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
             Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = "Nhiệm vụ",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF333333)
-            )
-            Spacer(modifier = Modifier.weight(1f))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Thử thách ngày",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF333333)
+                )
+                Text(
+                    text = "Hoàn thành bài tập chữ A để nhận quà!",
+                    fontSize = 12.sp,
+                    color = Color(0xFF888888),
+                    maxLines = 2
+                )
+            }
+
             Icon(
                 Icons.Default.ChevronRight,
                 contentDescription = null,
-                tint = Color(0xFF333333).copy(alpha = 0.4f),
+                tint = Color(0xFF888888),
                 modifier = Modifier.size(20.dp)
             )
         }

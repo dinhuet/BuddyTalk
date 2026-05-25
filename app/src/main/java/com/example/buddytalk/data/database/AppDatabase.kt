@@ -15,7 +15,7 @@ import com.example.buddytalk.data.entity.UserEntity
 
 @Database(
     entities = [UserEntity::class, Topic::class, Lesson::class, StudySession::class],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

@@ -205,7 +205,7 @@ private fun HeaderSection(
                             .padding(16.dp)
                     ) {
                         Text(
-                            text = "Xin chào, bạn đã học đến\nbài ABC rồi nè, cố gắng lên nhé!",
+                            text = "Chào bé! Hôm nay mình\ncùng học tiếng Việt nhé!",
                             fontSize = 13.sp,
                             color = Color(0xFF444444),
                             lineHeight = 18.sp

@@ -12,6 +12,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,6 +31,10 @@ fun HomeScreen(
     navController: NavController,
     userViewModel: UserViewModel
 ) {
+    val user by userViewModel.user.collectAsState()
+    val lessonCount = user?.lessonCount ?: 0
+    val exerciseCount = user?.exerciseCount ?: 0
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -61,17 +67,17 @@ fun HomeScreen(
             ) {
                 ProgressCard(
                     icon = Icons.Default.AutoStories,
-                    title = "5 Bài học",
+                    title = "$lessonCount Bài học",
                     accentColor = Color(0xFF4C84FF),
-                    progressFraction = 0.5f,
+                    progressFraction = (lessonCount / 10f).coerceAtMost(1f),
                     modifier = Modifier.weight(1f),
                     onClick = { navController.navigate(Routes.Topics.createRoute("learn")) }
                 )
                 ProgressCard(
                     icon = Icons.Default.Edit,
-                    title = "12 Bài tập",
+                    title = "$exerciseCount Bài tập",
                     accentColor = Color(0xFF15B299),
-                    progressFraction = 0.6f,
+                    progressFraction = (exerciseCount / 10f).coerceAtMost(1f),
                     modifier = Modifier.weight(1f),
                     onClick = { navController.navigate(Routes.Topics.createRoute("practice")) }
                 )
@@ -82,17 +88,17 @@ fun HomeScreen(
             ) {
                 ProgressCard(
                     icon = Icons.Default.Extension,
-                    title = "Cấp 3",
+                    title = "Cấp 1",
                     accentColor = Color(0xFF0191D8),
-                    starCount = 3,
+                    starCount = 1,
                     modifier = Modifier.weight(1f),
                     onClick = { navController.navigate(Routes.QuizMenu.route) }
                 )
                 ProgressCard(
                     icon = Icons.Default.Diamond,
-                    title = "120 XP",
+                    title = "Thống kê",
                     accentColor = Color(0xFF7D7AFF),
-                    progressFraction = 0.6f,
+                    starCount = 0,
                     modifier = Modifier.weight(1f),
                     onClick = { navController.navigate(Routes.Analytics.route) }
                 )

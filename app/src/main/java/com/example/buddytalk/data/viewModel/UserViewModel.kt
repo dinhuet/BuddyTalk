@@ -59,6 +59,14 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun completeLesson() {
+        completeActivity(isLesson = true)
+    }
+
+    fun completeExercise() {
+        completeActivity(isLesson = false)
+    }
+
+    private fun completeActivity(isLesson: Boolean) {
         viewModelScope.launch {
             val currentUser = _user.value ?: return@launch
             val now = System.currentTimeMillis()
@@ -68,13 +76,18 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
             val lastStudy = currentUser.lastStudyDate
 
             if (lastStudy == null) {
-                repository.updateUserAfterLesson(currentUser, 1, now)
+                if (isLesson) {
+                    repository.updateUserAfterLesson(currentUser, 1, now)
+                } else {
+                    repository.updateUserAfterExercise(currentUser, 1, now)
+                }
                 _streakUpdatedEvent.emit(1)
             } else {
                 val lastCalendar = Calendar.getInstance().apply { timeInMillis = lastStudy }
                 val nowCalendar = Calendar.getInstance().apply { timeInMillis = now }
 
                 if (isSameDay(lastCalendar, nowCalendar)) {
+                    repository.incrementCounter(currentUser, isLesson)
                     return@launch
                 }
 
@@ -83,7 +96,11 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                 } else {
                     1
                 }
-                repository.updateUserAfterLesson(currentUser, newStreak, now)
+                if (isLesson) {
+                    repository.updateUserAfterLesson(currentUser, newStreak, now)
+                } else {
+                    repository.updateUserAfterExercise(currentUser, newStreak, now)
+                }
                 _streakUpdatedEvent.emit(newStreak)
             }
         }

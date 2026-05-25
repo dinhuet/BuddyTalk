@@ -145,7 +145,7 @@ fun AppNavGraph(
                 navController = navController,
                 topicId = topicId,
                 type = type,
-                onLessonComplete = { userViewModel.completeLesson() }
+                onLessonComplete = { userViewModel.completeExercise() }
             )
         }
 
@@ -159,7 +159,7 @@ fun AppNavGraph(
             QuizScreen(
                 navController = navController,
                 type = type,
-                onQuizComplete = { userViewModel.completeLesson() }
+                onQuizComplete = { userViewModel.completeExercise() }
             )
         }
         

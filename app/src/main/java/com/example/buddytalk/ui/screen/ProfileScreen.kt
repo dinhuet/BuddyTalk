@@ -1,6 +1,8 @@
 package com.example.buddytalk.ui.screen
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -55,13 +57,14 @@ fun ProfileScreen(
                 MainProfileCard(
                     level = user.level, 
                     rank = user.rank,
-                    avatarUrl = user.avatarUrl
+                    avatarUrl = user.avatarUrl,
+                    experience = user.experience,
+                    maxExperience = user.maxExperience
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 BottomCardsRow(streak = user.streak)
                 
                 Spacer(modifier = Modifier.weight(1f))
-                // BottomNavigationBar được gọi tập trung tại MainActivity
                 Spacer(modifier = Modifier.height(12.dp))
             }
         }
@@ -122,25 +125,30 @@ fun HeaderSection(userName: String, onSettingsClick: () -> Unit) {
 }
 
 @Composable
-fun MainProfileCard(level: Int, rank: String, avatarUrl: String?) {
+fun MainProfileCard(level: Int, rank: String, avatarUrl: String?, experience: Int, maxExperience: Int) {
+    val badgeBrush = getBadgeBrush(level)
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
-            .height(320.dp),
+            .height(380.dp),
         shape = RoundedCornerShape(32.dp),
         colors = CardDefaults.cardColors(containerColor = CardBackground),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Box(contentAlignment = Alignment.BottomEnd) {
+                // Vòng Badge quanh Avatar
                 Box(
                     modifier = Modifier
-                        .size(120.dp)
+                        .size(116.dp)
+                        .border(BorderStroke(4.dp, badgeBrush), CircleShape)
+                        .padding(4.dp)
                         .clip(CircleShape)
                         .background(Color(0xFFE3F2FD)),
                     contentAlignment = Alignment.Center
@@ -156,7 +164,7 @@ fun MainProfileCard(level: Int, rank: String, avatarUrl: String?) {
                         Icon(
                             Icons.Default.Person, 
                             contentDescription = null, 
-                            modifier = Modifier.size(80.dp), 
+                            modifier = Modifier.size(60.dp), 
                             tint = ButtonYellow
                         )
                     }
@@ -164,7 +172,7 @@ fun MainProfileCard(level: Int, rank: String, avatarUrl: String?) {
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = ButtonYellow,
-                    modifier = Modifier.offset(y = 4.dp)
+                    modifier = Modifier.offset(y = 4.dp, x = (-4).dp)
                 ) {
                     Text(
                         text = "LV $level",
@@ -176,7 +184,42 @@ fun MainProfileCard(level: Int, rank: String, avatarUrl: String?) {
                 }
             }
             
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Kinh nghiệm",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextGray
+                    )
+                    Text(
+                        text = if (level >= 30) "MAX" else "$experience/$maxExperience EXP",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = HeaderBlue
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                LinearProgressIndicator(
+                    progress = { if (level >= 30) 1f else experience.toFloat() / maxExperience.toFloat() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(12.dp)
+                        .clip(RoundedCornerShape(6.dp)),
+                    color = HeaderBlue,
+                    trackColor = Color(0xFFE0E0E0),
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
             
             Surface(
                 shape = RoundedCornerShape(16.dp),
@@ -193,12 +236,12 @@ fun MainProfileCard(level: Int, rank: String, avatarUrl: String?) {
                 }
             }
             
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 32.dp)
+                    .padding(horizontal = 16.dp)
                     .height(64.dp),
                 contentAlignment = Alignment.BottomCenter
             ) {
@@ -231,6 +274,19 @@ fun MainProfileCard(level: Int, rank: String, avatarUrl: String?) {
                 }
             }
         }
+    }
+}
+
+@Composable
+fun getBadgeBrush(level: Int): Brush {
+    return when {
+        level >= 30 -> Brush.sweepGradient(listOf(Color(0xFFE040FB), Color(0xFF00E5FF), Color(0xFFE040FB))) // Legend/Rainbow
+        level >= 25 -> Brush.linearGradient(listOf(Color(0xFFFF5252), Color(0xFFD32F2F))) // Ruby
+        level >= 20 -> Brush.linearGradient(listOf(Color(0xFFB2EBF2), Color(0xFF00BCD4))) // Diamond
+        level >= 15 -> Brush.linearGradient(listOf(Color(0xFFFFD700), Color(0xFFFFA000))) // Gold
+        level >= 10 -> Brush.linearGradient(listOf(Color(0xFFC0C0C0), Color(0xFFE0E0E0))) // Silver
+        level >= 5 -> Brush.linearGradient(listOf(Color(0xFFCD7F32), Color(0xFF8B4513))) // Bronze
+        else -> Brush.linearGradient(listOf(Color(0xFFBDBDBD), Color(0xFF757575))) // Iron
     }
 }
 

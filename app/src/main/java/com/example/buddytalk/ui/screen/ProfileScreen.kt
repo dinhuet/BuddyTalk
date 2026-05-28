@@ -1,6 +1,5 @@
 package com.example.buddytalk.ui.screen
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -15,11 +14,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,121 +34,139 @@ fun ProfileScreen(
     navController: NavController
 ) {
     val userState by viewModel.user.collectAsState()
-    
     val user = userState ?: return
 
-    Box(modifier = Modifier.fillMaxSize().background(AppBackground)) {
+    val skyGradient = Brush.verticalGradient(
+        colors = listOf(Color(0xFF53B6E3), Color(0xFF8CD8F5))
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(skyGradient)
+    ) {
+        // Họa tiết trang trí nền (đám mây mờ và sao)
+        CloudDecorations()
+
         Column(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
         ) {
-            HeaderSection(
-                userName = user.userName,
-                onSettingsClick = onNavigateToSettings
-            )
+            HeaderSection(userName = user.userName, onSettingsClick = onNavigateToSettings)
             
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 0.dp)
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.SpaceEvenly,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(16.dp))
                 MainProfileCard(
-                    level = user.level, 
+                    level = user.level,
                     rank = user.rank,
                     avatarUrl = user.avatarUrl,
                     experience = user.experience,
-                    maxExperience = user.maxExperience
+                    maxExperience = user.maxExperience,
+                    onViewLessons = onNavigateToTopics
                 )
-                Spacer(modifier = Modifier.height(16.dp))
-                BottomCardsRow(streak = user.streak)
-                
-                Spacer(modifier = Modifier.weight(1f))
-                Spacer(modifier = Modifier.height(12.dp))
+
+                StreakCard(streak = user.streak)
             }
         }
+    }
+}
+
+@Composable
+fun CloudDecorations() {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.size(100.dp).offset(x = (-30).dp, y = 100.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.2f)))
+        Box(modifier = Modifier.size(140.dp).align(Alignment.TopEnd).offset(x = 60.dp, y = 160.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.2f)))
+        Text("⭐", modifier = Modifier.offset(x = 220.dp, y = 120.dp), fontSize = 14.sp, color = Color.White.copy(alpha = 0.5f))
+        Text("⭐", modifier = Modifier.offset(x = 320.dp, y = 220.dp), fontSize = 18.sp, color = Color.White.copy(alpha = 0.5f))
     }
 }
 
 @Composable
 fun HeaderSection(userName: String, onSettingsClick: () -> Unit) {
-    Box(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .wrapContentHeight()
-            .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(HeaderBlue, HeaderBlueLight)
-                )
-            )
-            .statusBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 32.dp)
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
+        Surface(
+            modifier = Modifier.size(60.dp),
+            shape = CircleShape,
+            color = Color.White,
+            shadowElevation = 2.dp
         ) {
-            Box(
-                modifier = Modifier
-                    .size(60.dp)
-                    .clip(CircleShape)
-                    .background(Color.White),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(contentAlignment = Alignment.Center) {
                 Text(text = "🦉", fontSize = 32.sp)
             }
-            
-            Spacer(modifier = Modifier.width(12.dp))
-            
-            Column(modifier = Modifier.weight(1.0f)) {
-                Text(
-                    text = "BẠN CỦA BUDDYTALK",
-                    color = Color.White.copy(alpha = 0.8f),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = userName,
-                    color = Color.White,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            
-            IconButton(onClick = onSettingsClick) {
-                Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.White.copy(alpha = 0.5f))
-            }
+        }
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "BẠN CỦA BUDDYTALK",
+                color = Color.White.copy(alpha = 0.9f),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = userName,
+                color = Color.White,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        IconButton(onClick = onSettingsClick) {
+            Icon(
+                Icons.Default.Settings,
+                contentDescription = "Settings",
+                tint = Color.White.copy(alpha = 0.7f),
+                modifier = Modifier.size(26.dp)
+            )
         }
     }
 }
 
 @Composable
-fun MainProfileCard(level: Int, rank: String, avatarUrl: String?, experience: Int, maxExperience: Int) {
-    val badgeBrush = getBadgeBrush(level)
-    
+fun MainProfileCard(
+    level: Int, 
+    rank: String, 
+    avatarUrl: String?, 
+    experience: Int, 
+    maxExperience: Int,
+    onViewLessons: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .height(380.dp),
+            .shadow(16.dp, RoundedCornerShape(32.dp)),
         shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(containerColor = CardBackground),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Avatar & LV Badge
             Box(contentAlignment = Alignment.BottomEnd) {
-                // Vòng Badge quanh Avatar
                 Box(
                     modifier = Modifier
-                        .size(116.dp)
-                        .border(BorderStroke(4.dp, badgeBrush), CircleShape)
+                        .size(125.dp)
+                        .border(4.dp, Color(0xFFEEEEEE), CircleShape)
                         .padding(4.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFFE3F2FD)),
+                        .background(Color(0xFFF9F9F9)),
                     contentAlignment = Alignment.Center
                 ) {
                     if (avatarUrl != null) {
@@ -162,113 +178,89 @@ fun MainProfileCard(level: Int, rank: String, avatarUrl: String?, experience: In
                         )
                     } else {
                         Icon(
-                            Icons.Default.Person, 
-                            contentDescription = null, 
-                            modifier = Modifier.size(60.dp), 
-                            tint = ButtonYellow
+                            Icons.Default.Person,
+                            contentDescription = null,
+                            modifier = Modifier.size(75.dp),
+                            tint = Color(0xFFFFCC33)
                         )
                     }
                 }
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = ButtonYellow,
-                    modifier = Modifier.offset(y = 4.dp, x = (-4).dp)
+                    shape = CircleShape,
+                    color = Color(0xFFFEBB12),
+                    modifier = Modifier.offset(x = 4.dp, y = (-4).dp)
                 ) {
                     Text(
                         text = "LV $level",
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
+                        fontSize = 13.sp
                     )
                 }
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Progress Bar
+            Column(modifier = Modifier.fillMaxWidth()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = "Kinh nghiệm",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextGray
-                    )
-                    Text(
-                        text = if (level >= 30) "MAX" else "$experience/$maxExperience EXP",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = HeaderBlue
-                    )
+                    Text(text = "Kinh nghiệm", color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    val expText = if (level >= 30) "MAX" else "$experience/$maxExperience EXP"
+                    Text(text = expText, color = Color(0xFF53B6E3), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 LinearProgressIndicator(
                     progress = { if (level >= 30) 1f else experience.toFloat() / maxExperience.toFloat() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(12.dp)
-                        .clip(RoundedCornerShape(6.dp)),
-                    color = HeaderBlue,
-                    trackColor = Color(0xFFE0E0E0),
+                        .clip(CircleShape),
+                    color = Color(0xFFD3D3D3),
+                    trackColor = Color(0xFFF5F5F5),
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            
+
+            // Rank Badge
             Surface(
-                shape = RoundedCornerShape(16.dp),
+                shape = CircleShape,
                 color = Color(0xFFFFF8E1),
-                border = null
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Star, contentDescription = null, tint = ButtonYellow, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = rank, color = ButtonYellow, fontWeight = FontWeight.Bold)
+                    Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFEBB12), modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(text = rank, color = Color(0xFFFEBB12), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .height(64.dp),
-                contentAlignment = Alignment.BottomCenter
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .background(Color(0xFFD48D06), shape = RoundedCornerShape(24.dp))
-                )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // 3D Button
+            Box(contentAlignment = Alignment.BottomCenter) {
+                Box(modifier = Modifier.fillMaxWidth().height(60.dp).offset(y = 4.dp).background(Color(0xFFD48D06), RoundedCornerShape(20.dp)))
                 Button(
-                    onClick = { },
-                    colors = ButtonDefaults.buttonColors(containerColor = ButtonYellow),
-                    shape = RoundedCornerShape(24.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .offset(y = (-6).dp)
-                        .height(56.dp),
+                    onClick = onViewLessons,
+                    modifier = Modifier.fillMaxWidth().height(60.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFEBB12)),
+                    shape = RoundedCornerShape(20.dp),
                     contentPadding = PaddingValues(0.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = "🏆", fontSize = 20.sp)
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(text = "🏆", fontSize = 22.sp)
+                        Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = "XEM BÀI HỌC", 
-                            fontWeight = FontWeight.Black, 
-                            fontSize = 18.sp,
-                            color = Color(0xFF1E3A8A)
+                            text = "XEM BÀI HỌC",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 16.sp,
+                            color = Color(0xFF1D3557)
                         )
                     }
                 }
@@ -278,129 +270,64 @@ fun MainProfileCard(level: Int, rank: String, avatarUrl: String?, experience: In
 }
 
 @Composable
-fun getBadgeBrush(level: Int): Brush {
-    return when {
-        level >= 30 -> Brush.sweepGradient(listOf(Color(0xFFE040FB), Color(0xFF00E5FF), Color(0xFFE040FB))) // Legend/Rainbow
-        level >= 25 -> Brush.linearGradient(listOf(Color(0xFFFF5252), Color(0xFFD32F2F))) // Ruby
-        level >= 20 -> Brush.linearGradient(listOf(Color(0xFFB2EBF2), Color(0xFF00BCD4))) // Diamond
-        level >= 15 -> Brush.linearGradient(listOf(Color(0xFFFFD700), Color(0xFFFFA000))) // Gold
-        level >= 10 -> Brush.linearGradient(listOf(Color(0xFFC0C0C0), Color(0xFFE0E0E0))) // Silver
-        level >= 5 -> Brush.linearGradient(listOf(Color(0xFFCD7F32), Color(0xFF8B4513))) // Bronze
-        else -> Brush.linearGradient(listOf(Color(0xFFBDBDBD), Color(0xFF757575))) // Iron
-    }
-}
+fun StreakCard(streak: Int) {
+    val streakGradient = Brush.linearGradient(
+        colors = listOf(Color(0xFFFF9500), Color(0xFFFF4B2B), Color(0xFF9129AD))
+    )
 
-@Composable
-fun BottomCardsRow(streak: Int) {
-    Row(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+            .height(180.dp)
+            .shadow(12.dp, RoundedCornerShape(28.dp)),
+        shape = RoundedCornerShape(28.dp)
     ) {
-        Card(
-            modifier = Modifier
-                .weight(1f)
-                .height(180.dp),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = CardBackground)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "TÚI ĐỒ", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    Text(text = "TẤT CẢ", color = HeaderBlue, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ItemIcon(Icons.Default.Star, "TOP 1", ButtonYellow)
-                    ItemIcon(Icons.Default.ThumbUp, "7 NGÀY", Color.Red)
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ItemIcon(Icons.Default.Menu, "", Color.LightGray)
-                    ItemIcon(Icons.Default.Info, "", Color.LightGray)
-                }
-            }
-        }
-        
-        Card(
-            modifier = Modifier
-                .weight(1f)
-                .height(180.dp),
-            shape = RoundedCornerShape(24.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFFEBC85E),
-                                Color(0xFF77B5FE)
-                            )
-                        )
-                    )
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "CHUỖI",
-                        color = Color.White,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 14.sp
-                    )
-                    
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "$streak",
-                            color = Color.White,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 48.sp,
-                            fontStyle = FontStyle.Italic
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = "🔥", fontSize = 24.sp)
-                    }
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    Surface(
-                        color = Color.White.copy(alpha = 0.3f),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Text(
-                            text = "Cố gắng lên!",
-                            color = Color.White,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ItemIcon(icon: ImageVector, label: String, tint: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier
-                .size(45.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFFFFF3E0)),
-            contentAlignment = Alignment.Center
+                .fillMaxSize()
+                .background(streakGradient)
+                .padding(20.dp)
         ) {
-            Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(24.dp))
-        }
-        if (label.isNotEmpty()) {
-            Text(text = label, fontSize = 8.sp, fontWeight = FontWeight.Bold, color = TextGray)
+            Column {
+                Text(
+                    text = "CHUỖI",
+                    color = Color.White,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 28.sp
+                )
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = "$streak",
+                        color = Color.White,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 72.sp,
+                        lineHeight = 72.sp
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(text = "🔥", fontSize = 36.sp, modifier = Modifier.offset(y = (-10).dp))
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Surface(
+                    color = Color.White.copy(alpha = 0.3f),
+                    shape = CircleShape
+                ) {
+                    Text(
+                        text = "Cố gắng lên!",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                    )
+                }
+            }
+            
+            Text(
+                text = "🔥",
+                fontSize = 120.sp,
+                modifier = Modifier.align(Alignment.BottomEnd).offset(x = 15.dp, y = 15.dp)
+            )
         }
     }
 }

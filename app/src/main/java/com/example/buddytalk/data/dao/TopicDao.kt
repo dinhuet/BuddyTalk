@@ -20,4 +20,7 @@ interface TopicDao {
 
     @Delete
     suspend fun deleteTopic(topic: Topic)
+
+    @Query("UPDATE topics SET isCompleted = 1 WHERE id = :topicId")
+    suspend fun markTopicCompleted(topicId: Long)
 }

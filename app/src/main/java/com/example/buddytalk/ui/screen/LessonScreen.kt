@@ -39,7 +39,7 @@ fun LessonScreen(
     topicId: Long,
     mode: String,
     viewModel: LessonViewModel = viewModel(),
-    onLessonComplete: () -> Unit = {}
+    onLessonComplete: (Long) -> Unit = {}
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
@@ -146,7 +146,7 @@ fun LessonScreen(
     // Streak update when finished
     LaunchedEffect(uiState.isFinished) {
         if (uiState.isFinished) {
-            onLessonComplete()
+            onLessonComplete(topicId)
         }
     }
 

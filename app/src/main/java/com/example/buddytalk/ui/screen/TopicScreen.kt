@@ -488,13 +488,25 @@ fun TopicItem(
     onClick: () -> Unit
 ) {
     val isLocked = topicState.topic.isLocked
+    val isCompleted = topicState.isCompleted
+
+    val boxBgColor = when {
+        isCompleted -> Color(0xFFD1FAE5)
+        else -> Color(0xFFF0F7FF)
+    }
+
+    val surfaceColor = when {
+        isCompleted -> Color(0xFFD1FAE5)
+        else -> Color.White
+    }
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .alpha(if (isLocked) 0.6f else 1f)
             .clickable(enabled = !isLocked) { onClick() },
         shape = RoundedCornerShape(16.dp),
-        color = Color.White,
+        color = surfaceColor,
         shadowElevation = if (isLocked) 0.dp else 1.dp
     ) {
         Row(
@@ -506,7 +518,7 @@ fun TopicItem(
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .background(Color(0xFFF0F7FF), RoundedCornerShape(12.dp)),
+                    .background(boxBgColor, RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -545,6 +557,19 @@ fun TopicItem(
                     tint = Color.Gray,
                     modifier = Modifier.size(20.dp)
                 )
+            } else if (isCompleted) {
+                Surface(
+                    shape = CircleShape,
+                    color = Color(0xFF10B981),
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Completed",
+                        tint = Color.White,
+                        modifier = Modifier.padding(4.dp)
+                    )
+                }
             } else {
                 Icon(
                     imageVector = Icons.Default.ChevronRight,

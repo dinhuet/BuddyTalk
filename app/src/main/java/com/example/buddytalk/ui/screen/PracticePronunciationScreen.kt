@@ -64,7 +64,7 @@ fun PracticePronunciationScreen(
     topicId: Long,
     type: String, // "sentence" or "vocabulary"
     viewModel: LessonViewModel = viewModel(),
-    onLessonComplete: () -> Unit = {}
+    onLessonComplete: (Long) -> Unit = {}
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
@@ -143,7 +143,7 @@ fun PracticePronunciationScreen(
     // Streak update when finished
     LaunchedEffect(uiState.isFinished) {
         if (uiState.isFinished) {
-            onLessonComplete()
+            onLessonComplete(topicId)
         }
     }
 

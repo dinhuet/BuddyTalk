@@ -8,6 +8,7 @@ import com.example.buddytalk.data.database.AppDatabase
 import com.example.buddytalk.data.entity.StudySession
 import com.example.buddytalk.data.entity.UserEntity
 import com.example.buddytalk.data.repository.StudySessionRepository
+import com.example.buddytalk.data.repository.TopicRepository
 import com.example.buddytalk.data.repository.UserRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -25,6 +26,7 @@ import java.util.Calendar
 class UserViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: UserRepository
     private val studySessionRepository: StudySessionRepository
+    private val topicRepository: TopicRepository
     private val context = application.applicationContext
 
     private val _user = MutableStateFlow<UserEntity?>(null)
@@ -38,6 +40,7 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         val userDao = db.userDao()
         repository = UserRepository(userDao)
         studySessionRepository = StudySessionRepository(db.studySessionDao())
+        topicRepository = TopicRepository(db.topicDao())
         
         viewModelScope.launch {
             repository.getUser().collect {
@@ -58,20 +61,22 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun completeLesson() {
-        completeActivity(isLesson = true)
+    fun completeLesson(topicId: Long? = null) {
+        completeActivity(isLesson = true, topicId = topicId)
     }
 
-    fun completeExercise() {
-        completeActivity(isLesson = false)
+    fun completeExercise(topicId: Long? = null) {
+        completeActivity(isLesson = false, topicId = topicId)
     }
 
-    private fun completeActivity(isLesson: Boolean) {
+    private fun completeActivity(isLesson: Boolean, topicId: Long? = null) {
         viewModelScope.launch {
             val currentUser = _user.value ?: return@launch
             val now = System.currentTimeMillis()
 
             studySessionRepository.insert(StudySession(timestamp = now))
+
+            topicId?.let { topicRepository.markTopicCompleted(it) }
 
             val lastStudy = currentUser.lastStudyDate
 

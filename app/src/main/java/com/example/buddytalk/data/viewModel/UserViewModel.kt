@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -88,6 +89,8 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val currentUser = _user.value ?: return@launch
             val now = System.currentTimeMillis()
+            val topics = topicRepository.allTopics.first()
+            val currentTopicIndex = topicId?.let { id -> topics.indexOfFirst { it.id == id } } ?: -1
             val wasCompletedBefore = topicId?.let { topicRepository.isTopicCompleted(it) } == true
             val expAmount = when {
                 isLesson && !wasCompletedBefore -> UserRepository.FIRST_TIME_LESSON_EXP
@@ -99,6 +102,12 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
             studySessionRepository.insert(StudySession(timestamp = now))
 
             topicId?.let { topicRepository.markTopicCompleted(it) }
+            if (topicId != null && !wasCompletedBefore && currentTopicIndex >= 0) {
+                val nextTopic = topics.getOrNull(currentTopicIndex + 1)
+                if (nextTopic != null && nextTopic.isLocked) {
+                    topicRepository.unlockTopic(nextTopic.id)
+                }
+            }
 
             val lastStudy = currentUser.lastStudyDate
 

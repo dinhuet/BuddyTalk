@@ -247,11 +247,13 @@ fun TopicTreeItem(
         isCompleted -> Color(0xFF10B981)
         else -> Color(0xFF2196F3)
     }
+    val infoAlpha = if (isLocked) 0.55f else 1f
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(120.dp),
+            .height(120.dp)
+            .alpha(infoAlpha),
         contentAlignment = Alignment.Center
     ) {
         // Vertical line
@@ -491,11 +493,13 @@ fun TopicItem(
     val isCompleted = topicState.isCompleted
 
     val boxBgColor = when {
+        isLocked -> Color(0xFFF3F4F6)
         isCompleted -> Color(0xFFD1FAE5)
         else -> Color(0xFFF0F7FF)
     }
 
     val surfaceColor = when {
+        isLocked -> Color(0xFFF3F4F6)
         isCompleted -> Color(0xFFD1FAE5)
         else -> Color.White
     }

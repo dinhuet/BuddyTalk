@@ -15,6 +15,8 @@ class TopicRepository(private val topicDao: TopicDao) {
 
     suspend fun updateTopic(topic: Topic) = topicDao.updateTopic(topic)
 
+    suspend fun unlockTopic(topicId: Long) = topicDao.updateTopicLockState(topicId, false)
+
     suspend fun deleteTopic(topic: Topic) = topicDao.deleteTopic(topic)
 
     suspend fun markTopicCompleted(topicId: Long) = topicDao.markTopicCompleted(topicId)

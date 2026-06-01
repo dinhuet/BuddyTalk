@@ -105,8 +105,8 @@ class TopicViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun seedDatabase() {
         val topics = listOf(
             Topic(name = "Động vật", isLocked = false),
-            Topic(name = "Nghề nghiệp", isLocked = false),
-            Topic(name = "Gia đình", isLocked = false),
+            Topic(name = "Nghề nghiệp", isLocked = true),
+            Topic(name = "Gia đình", isLocked = true),
             Topic(name = "Thức ăn", isLocked = true),
             Topic(name = "Quần áo", isLocked = true)
         )

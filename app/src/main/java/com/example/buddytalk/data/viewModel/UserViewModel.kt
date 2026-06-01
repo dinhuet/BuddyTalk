@@ -33,6 +33,9 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     private val _streakUpdatedEvent = MutableSharedFlow<Int>()
     val streakUpdatedEvent: SharedFlow<Int> = _streakUpdatedEvent.asSharedFlow()
 
+    private val _levelUpEvent = MutableSharedFlow<Int>()
+    val levelUpEvent: SharedFlow<Int> = _levelUpEvent.asSharedFlow()
+
     init {
         val db = AppDatabase.getDatabase(application)
         val userDao = db.userDao()
@@ -45,7 +48,7 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                     val defaultUser = UserEntity(
                         userName = "Anonymous",
                         level = 1,
-                        rank = "Hạng I",
+                        rank = "Tập sự",
                         streak = 0,
                         lastStudyDate = null,
                         avatarUrl = null
@@ -74,9 +77,10 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
             studySessionRepository.insert(StudySession(timestamp = now))
 
             val lastStudy = currentUser.lastStudyDate
+            var newLevel: Int? = null
 
             if (lastStudy == null) {
-                if (isLesson) {
+                newLevel = if (isLesson) {
                     repository.updateUserAfterLesson(currentUser, 1, now)
                 } else {
                     repository.updateUserAfterExercise(currentUser, 1, now)
@@ -87,21 +91,24 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                 val nowCalendar = Calendar.getInstance().apply { timeInMillis = now }
 
                 if (isSameDay(lastCalendar, nowCalendar)) {
-                    repository.incrementCounter(currentUser, isLesson)
-                    return@launch
-                }
-
-                val newStreak = if (isYesterday(lastCalendar, nowCalendar)) {
-                    currentUser.streak + 1
+                    newLevel = repository.incrementCounter(currentUser, isLesson)
                 } else {
-                    1
+                    val newStreak = if (isYesterday(lastCalendar, nowCalendar)) {
+                        currentUser.streak + 1
+                    } else {
+                        1
+                    }
+                    newLevel = if (isLesson) {
+                        repository.updateUserAfterLesson(currentUser, newStreak, now)
+                    } else {
+                        repository.updateUserAfterExercise(currentUser, newStreak, now)
+                    }
+                    _streakUpdatedEvent.emit(newStreak)
                 }
-                if (isLesson) {
-                    repository.updateUserAfterLesson(currentUser, newStreak, now)
-                } else {
-                    repository.updateUserAfterExercise(currentUser, newStreak, now)
-                }
-                _streakUpdatedEvent.emit(newStreak)
+            }
+            
+            newLevel?.let {
+                _levelUpEvent.emit(it)
             }
         }
     }

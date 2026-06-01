@@ -19,9 +19,13 @@ class UserRepository(private val userDao: UserDao) {
         userDao.insertUser(currentUser.copy(avatarUrl = newUrl))
     }
 
-    suspend fun addExperience(currentUser: UserEntity, amount: Int) {
+    /**
+     * Cộng EXP và trả về Level mới nếu có sự thay đổi (Level Up)
+     */
+    suspend fun addExperience(currentUser: UserEntity, amount: Int): Int? {
+        val oldLevel = currentUser.level
         var newExp = currentUser.experience + amount
-        var newLevel = currentUser.level
+        var newLevel = oldLevel
         var newMaxExp = currentUser.maxExperience
 
         while (newExp >= newMaxExp && newLevel < 30) {
@@ -30,18 +34,20 @@ class UserRepository(private val userDao: UserDao) {
             newMaxExp = calculateMaxExp(newLevel)
         }
         
-        // Nếu đã đạt max level thì không tăng exp nữa mà giữ ở mức max
         if (newLevel >= 30) {
             newExp = 0
             newLevel = 30
         }
 
-        userDao.insertUser(currentUser.copy(
+        val updatedUser = currentUser.copy(
             experience = newExp,
             level = newLevel,
             maxExperience = newMaxExp,
             rank = getRankName(newLevel)
-        ))
+        )
+        userDao.insertUser(updatedUser)
+        
+        return if (newLevel > oldLevel) newLevel else null
     }
 
     private fun calculateMaxExp(level: Int): Int {
@@ -60,29 +66,29 @@ class UserRepository(private val userDao: UserDao) {
         }
     }
 
-    suspend fun updateUserAfterLesson(currentUser: UserEntity, newStreak: Int, lastStudyDate: Long, expAmount: Int = 20) {
+    suspend fun updateUserAfterLesson(currentUser: UserEntity, newStreak: Int, lastStudyDate: Long, expAmount: Int = 20): Int? {
         val updatedUser = currentUser.copy(
             streak = newStreak,
             lessonCount = currentUser.lessonCount + 1,
             lastStudyDate = lastStudyDate
         )
-        addExperience(updatedUser, expAmount)
+        return addExperience(updatedUser, expAmount)
     }
 
-    suspend fun updateUserAfterExercise(currentUser: UserEntity, newStreak: Int, lastStudyDate: Long, expAmount: Int = 10) {
+    suspend fun updateUserAfterExercise(currentUser: UserEntity, newStreak: Int, lastStudyDate: Long, expAmount: Int = 10): Int? {
         val updatedUser = currentUser.copy(
             streak = newStreak,
             exerciseCount = currentUser.exerciseCount + 1,
             lastStudyDate = lastStudyDate
         )
-        addExperience(updatedUser, expAmount)
+        return addExperience(updatedUser, expAmount)
     }
 
-    suspend fun incrementCounter(currentUser: UserEntity, isLesson: Boolean, expAmount: Int = 5) {
+    suspend fun incrementCounter(currentUser: UserEntity, isLesson: Boolean, expAmount: Int = 5): Int? {
         val updatedUser = currentUser.copy(
             lessonCount = if (isLesson) currentUser.lessonCount + 1 else currentUser.lessonCount,
             exerciseCount = if (!isLesson) currentUser.exerciseCount + 1 else currentUser.exerciseCount
         )
-        addExperience(updatedUser, expAmount)
+        return addExperience(updatedUser, expAmount)
     }
 }

@@ -21,6 +21,7 @@ import com.example.buddytalk.ui.screen.AnalyticsScreen
 import com.example.buddytalk.ui.screen.QuizMenuScreen
 import com.example.buddytalk.ui.screen.QuizScreen
 import com.example.buddytalk.ui.component.StreakDialog
+import com.example.buddytalk.ui.component.LevelUpDialog
 
 @Composable
 fun AppNavGraph(
@@ -30,6 +31,9 @@ fun AppNavGraph(
 ) {
     var showStreakDialog by remember { mutableStateOf(false) }
     var currentStreak by remember { mutableIntStateOf(0) }
+    
+    var showLevelUpDialog by remember { mutableStateOf(false) }
+    var newLevel by remember { mutableIntStateOf(1) }
 
     LaunchedEffect(Unit) {
         userViewModel.streakUpdatedEvent.collect { streak ->
@@ -37,11 +41,25 @@ fun AppNavGraph(
             showStreakDialog = true
         }
     }
+    
+    LaunchedEffect(Unit) {
+        userViewModel.levelUpEvent.collect { level ->
+            newLevel = level
+            showLevelUpDialog = true
+        }
+    }
 
     if (showStreakDialog) {
         StreakDialog(
             streakCount = currentStreak,
             onDismiss = { showStreakDialog = false }
+        )
+    }
+    
+    if (showLevelUpDialog) {
+        LevelUpDialog(
+            level = newLevel,
+            onDismiss = { showLevelUpDialog = false }
         )
     }
 

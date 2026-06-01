@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TopicDao {
-    @Query("SELECT * FROM topics")
+    @Query("SELECT * FROM topics ORDER BY id ASC")
     fun getAllTopics(): Flow<List<Topic>>
 
     @Query("SELECT * FROM topics WHERE id = :id")
@@ -23,4 +23,7 @@ interface TopicDao {
 
     @Query("UPDATE topics SET isCompleted = 1 WHERE id = :topicId")
     suspend fun markTopicCompleted(topicId: Long)
+
+    @Query("UPDATE topics SET isLocked = :isLocked WHERE id = :topicId")
+    suspend fun updateTopicLockState(topicId: Long, isLocked: Boolean)
 }

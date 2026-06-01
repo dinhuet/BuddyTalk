@@ -17,11 +17,24 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.util.Calendar
+import kotlin.math.max
+
+data class AchievementEvent(
+    val type: AchievementType,
+    val title: String,
+    val message: String
+)
+
+enum class AchievementType {
+    LEVEL_UP,
+    BADGE_UP
+}
 
 class UserViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: UserRepository
@@ -34,6 +47,9 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _streakUpdatedEvent = MutableSharedFlow<Int>()
     val streakUpdatedEvent: SharedFlow<Int> = _streakUpdatedEvent.asSharedFlow()
+
+    private val _achievementEvent = MutableSharedFlow<AchievementEvent>()
+    val achievementEvent: SharedFlow<AchievementEvent> = _achievementEvent.asSharedFlow()
 
     init {
         val db = AppDatabase.getDatabase(application)
@@ -73,26 +89,43 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val currentUser = _user.value ?: return@launch
             val now = System.currentTimeMillis()
+            val topics = topicRepository.allTopics.first()
+            val currentTopicIndex = topicId?.let { id -> topics.indexOfFirst { it.id == id } } ?: -1
+            val wasCompletedBefore = topicId?.let { topicRepository.isTopicCompleted(it) } == true
+            val expAmount = when {
+                isLesson && !wasCompletedBefore -> UserRepository.FIRST_TIME_LESSON_EXP
+                isLesson -> UserRepository.REPEATED_LESSON_EXP
+                !isLesson && !wasCompletedBefore -> UserRepository.FIRST_TIME_EXERCISE_EXP
+                else -> UserRepository.REPEATED_EXERCISE_EXP
+            }
 
             studySessionRepository.insert(StudySession(timestamp = now))
 
             topicId?.let { topicRepository.markTopicCompleted(it) }
+            if (topicId != null && !wasCompletedBefore && currentTopicIndex >= 0) {
+                val nextTopic = topics.getOrNull(currentTopicIndex + 1)
+                if (nextTopic != null && nextTopic.isLocked) {
+                    topicRepository.unlockTopic(nextTopic.id)
+                }
+            }
 
             val lastStudy = currentUser.lastStudyDate
 
             if (lastStudy == null) {
                 if (isLesson) {
-                    repository.updateUserAfterLesson(currentUser, 1, now)
+                    repository.updateUserAfterLesson(currentUser, 1, now, expAmount)
                 } else {
-                    repository.updateUserAfterExercise(currentUser, 1, now)
+                    repository.updateUserAfterExercise(currentUser, 1, now, expAmount)
                 }
+                emitAchievementEvents(currentUser, expAmount)
                 _streakUpdatedEvent.emit(1)
             } else {
                 val lastCalendar = Calendar.getInstance().apply { timeInMillis = lastStudy }
                 val nowCalendar = Calendar.getInstance().apply { timeInMillis = now }
 
                 if (isSameDay(lastCalendar, nowCalendar)) {
-                    repository.incrementCounter(currentUser, isLesson)
+                    repository.incrementCounter(currentUser, isLesson, expAmount)
+                    emitAchievementEvents(currentUser, expAmount)
                     return@launch
                 }
 
@@ -102,12 +135,75 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                     1
                 }
                 if (isLesson) {
-                    repository.updateUserAfterLesson(currentUser, newStreak, now)
+                    repository.updateUserAfterLesson(currentUser, newStreak, now, expAmount)
                 } else {
-                    repository.updateUserAfterExercise(currentUser, newStreak, now)
+                    repository.updateUserAfterExercise(currentUser, newStreak, now, expAmount)
                 }
+                emitAchievementEvents(currentUser, expAmount)
                 _streakUpdatedEvent.emit(newStreak)
             }
+        }
+    }
+
+    private suspend fun emitAchievementEvents(previousUser: UserEntity, gainedExp: Int) {
+        val levelResult = simulateLevelProgress(previousUser, gainedExp)
+        if (levelResult.newLevel > previousUser.level) {
+            _achievementEvent.emit(
+                AchievementEvent(
+                    type = AchievementType.LEVEL_UP,
+                    title = "Chúc mừng lên cấp!",
+                    message = "Bé đã lên cấp ${levelResult.newLevel}!"
+                )
+            )
+        }
+        if (levelResult.newRank != previousUser.rank) {
+            _achievementEvent.emit(
+                AchievementEvent(
+                    type = AchievementType.BADGE_UP,
+                    title = "Chúc mừng nhận badge mới!",
+                    message = "Bé đã đạt danh hiệu ${levelResult.newRank}!"
+                )
+            )
+        }
+    }
+
+    private data class LevelProgressResult(
+        val newLevel: Int,
+        val newRank: String
+    )
+
+    private fun simulateLevelProgress(user: UserEntity, gainedExp: Int): LevelProgressResult {
+        var newExp = user.experience + gainedExp
+        var newLevel = user.level
+        var newMaxExp = user.maxExperience
+
+        while (newExp >= newMaxExp && newLevel < 30) {
+            newExp -= newMaxExp
+            newLevel++
+            newMaxExp = calculateMaxExp(newLevel)
+        }
+
+        if (newLevel >= 30) {
+            newLevel = 30
+        }
+
+        return LevelProgressResult(
+            newLevel = newLevel,
+            newRank = getRankName(newLevel)
+        )
+    }
+
+    private fun calculateMaxExp(level: Int): Int = max(level, 1) * 100
+
+    private fun getRankName(level: Int): String {
+        return when {
+            level >= 30 -> "Thần tượng"
+            level >= 25 -> "Huyền thoại"
+            level >= 20 -> "Bậc thầy"
+            level >= 15 -> "Chuyên gia"
+            level >= 10 -> "Chiến binh"
+            level >= 5 -> "Đồng hành"
+            else -> "Tập sự"
         }
     }
 

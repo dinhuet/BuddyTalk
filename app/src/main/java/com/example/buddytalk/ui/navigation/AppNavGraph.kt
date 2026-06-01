@@ -10,6 +10,7 @@ import androidx.navigation.NavType
 import com.example.buddytalk.data.viewModel.AnalyticsViewModel
 import com.example.buddytalk.data.viewModel.UserViewModel
 import com.example.buddytalk.data.viewModel.TopicViewModel
+import com.example.buddytalk.data.viewModel.AchievementEvent
 import com.example.buddytalk.ui.screen.SettingsScreen
 import com.example.buddytalk.ui.screen.TopicScreen
 import com.example.buddytalk.ui.screen.HomeScreen
@@ -21,6 +22,7 @@ import com.example.buddytalk.ui.screen.AnalyticsScreen
 import com.example.buddytalk.ui.screen.QuizMenuScreen
 import com.example.buddytalk.ui.screen.QuizScreen
 import com.example.buddytalk.ui.component.StreakDialog
+import com.example.buddytalk.ui.component.AchievementDialog
 
 @Composable
 fun AppNavGraph(
@@ -30,6 +32,7 @@ fun AppNavGraph(
 ) {
     var showStreakDialog by remember { mutableStateOf(false) }
     var currentStreak by remember { mutableIntStateOf(0) }
+    var currentAchievement by remember { mutableStateOf<AchievementEvent?>(null) }
 
     LaunchedEffect(Unit) {
         userViewModel.streakUpdatedEvent.collect { streak ->
@@ -38,10 +41,23 @@ fun AppNavGraph(
         }
     }
 
+    LaunchedEffect(Unit) {
+        userViewModel.achievementEvent.collect { achievement ->
+            currentAchievement = achievement
+        }
+    }
+
     if (showStreakDialog) {
         StreakDialog(
             streakCount = currentStreak,
             onDismiss = { showStreakDialog = false }
+        )
+    }
+
+    currentAchievement?.let { achievement ->
+        AchievementDialog(
+            achievement = achievement,
+            onDismiss = { currentAchievement = null }
         )
     }
 

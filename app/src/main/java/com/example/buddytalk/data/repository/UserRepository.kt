@@ -5,6 +5,13 @@ import com.example.buddytalk.data.entity.UserEntity
 import kotlinx.coroutines.flow.Flow
 
 class UserRepository(private val userDao: UserDao) {
+    companion object {
+        const val FIRST_TIME_LESSON_EXP = 50
+        const val REPEATED_LESSON_EXP = 5
+        const val FIRST_TIME_EXERCISE_EXP = 20
+        const val REPEATED_EXERCISE_EXP = 10
+    }
+
     fun getUser(): Flow<UserEntity?> = userDao.getUser()
 
     suspend fun insertUser(user: UserEntity) {
@@ -60,7 +67,7 @@ class UserRepository(private val userDao: UserDao) {
         }
     }
 
-    suspend fun updateUserAfterLesson(currentUser: UserEntity, newStreak: Int, lastStudyDate: Long, expAmount: Int = 20) {
+    suspend fun updateUserAfterLesson(currentUser: UserEntity, newStreak: Int, lastStudyDate: Long, expAmount: Int = FIRST_TIME_LESSON_EXP) {
         val updatedUser = currentUser.copy(
             streak = newStreak,
             lessonCount = currentUser.lessonCount + 1,
@@ -69,7 +76,7 @@ class UserRepository(private val userDao: UserDao) {
         addExperience(updatedUser, expAmount)
     }
 
-    suspend fun updateUserAfterExercise(currentUser: UserEntity, newStreak: Int, lastStudyDate: Long, expAmount: Int = 10) {
+    suspend fun updateUserAfterExercise(currentUser: UserEntity, newStreak: Int, lastStudyDate: Long, expAmount: Int = FIRST_TIME_EXERCISE_EXP) {
         val updatedUser = currentUser.copy(
             streak = newStreak,
             exerciseCount = currentUser.exerciseCount + 1,
@@ -78,7 +85,7 @@ class UserRepository(private val userDao: UserDao) {
         addExperience(updatedUser, expAmount)
     }
 
-    suspend fun incrementCounter(currentUser: UserEntity, isLesson: Boolean, expAmount: Int = 5) {
+    suspend fun incrementCounter(currentUser: UserEntity, isLesson: Boolean, expAmount: Int) {
         val updatedUser = currentUser.copy(
             lessonCount = if (isLesson) currentUser.lessonCount + 1 else currentUser.lessonCount,
             exerciseCount = if (!isLesson) currentUser.exerciseCount + 1 else currentUser.exerciseCount

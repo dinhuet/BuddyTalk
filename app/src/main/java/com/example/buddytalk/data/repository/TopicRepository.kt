@@ -9,6 +9,8 @@ class TopicRepository(private val topicDao: TopicDao) {
 
     suspend fun getTopicById(id: Long): Topic? = topicDao.getTopicById(id)
 
+    suspend fun isTopicCompleted(topicId: Long): Boolean = topicDao.getTopicById(topicId)?.isCompleted == true
+
     suspend fun insertTopic(topic: Topic): Long = topicDao.insertTopic(topic)
 
     suspend fun updateTopic(topic: Topic) = topicDao.updateTopic(topic)

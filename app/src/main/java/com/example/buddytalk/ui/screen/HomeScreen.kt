@@ -21,9 +21,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.buddytalk.data.viewModel.UserViewModel
 import com.example.buddytalk.ui.navigation.Routes
 
@@ -35,6 +37,7 @@ fun HomeScreen(
     val user by userViewModel.user.collectAsState()
     val lessonCount = user?.lessonCount ?: 0
     val exerciseCount = user?.exerciseCount ?: 0
+    val avatarUrl = user?.avatarUrl
 
     Column(
         modifier = Modifier
@@ -43,6 +46,7 @@ fun HomeScreen(
             .background(Color.White)
     ) {
         HeaderSection(
+            avatarUrl = avatarUrl,
             onLearnNow = { navController.navigate(Routes.Topics.createRoute("learn")) }
         )
 
@@ -118,6 +122,7 @@ fun HomeScreen(
 
 @Composable
 private fun HeaderSection(
+    avatarUrl: String?,
     onLearnNow: () -> Unit
 ) {
     Box(
@@ -159,19 +164,6 @@ private fun HeaderSection(
                     color = Color.White
                 )
                 Spacer(modifier = Modifier.weight(1f))
-                Icon(
-                    Icons.Default.Settings,
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.8f),
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Icon(
-                    Icons.Default.AccountCircle,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(28.dp)
-                )
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -188,7 +180,16 @@ private fun HeaderSection(
                     color = Color.White.copy(alpha = 0.2f)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Text("🐼", fontSize = 36.sp)
+                        if (avatarUrl != null) {
+                            AsyncImage(
+                                model = avatarUrl,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Text("🐼", fontSize = 36.sp)
+                        }
                     }
                 }
 

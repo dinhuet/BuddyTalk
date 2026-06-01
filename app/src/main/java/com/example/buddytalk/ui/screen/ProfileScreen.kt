@@ -54,7 +54,11 @@ fun ProfileScreen(
                 .statusBarsPadding()
                 .navigationBarsPadding()
         ) {
-            HeaderSection(userName = user.userName, onSettingsClick = onNavigateToSettings)
+            HeaderSection(
+                userName = user.userName,
+                avatarUrl = user.avatarUrl,
+                onSettingsClick = onNavigateToSettings
+            )
             
             Column(
                 modifier = Modifier
@@ -90,7 +94,7 @@ fun CloudDecorations() {
 }
 
 @Composable
-fun HeaderSection(userName: String, onSettingsClick: () -> Unit) {
+fun HeaderSection(userName: String, avatarUrl: String?, onSettingsClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -104,7 +108,16 @@ fun HeaderSection(userName: String, onSettingsClick: () -> Unit) {
             shadowElevation = 2.dp
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Text(text = "🦉", fontSize = 32.sp)
+                if (avatarUrl != null) {
+                    AsyncImage(
+                        model = avatarUrl,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize().clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Text(text = "🐼", fontSize = 32.sp)
+                }
             }
         }
 
@@ -177,12 +190,7 @@ fun MainProfileCard(
                             contentScale = ContentScale.Crop
                         )
                     } else {
-                        Icon(
-                            Icons.Default.Person,
-                            contentDescription = null,
-                            modifier = Modifier.size(75.dp),
-                            tint = Color(0xFFFFCC33)
-                        )
+                        Text(text = "🐼", fontSize = 64.sp)
                     }
                 }
                 Surface(
